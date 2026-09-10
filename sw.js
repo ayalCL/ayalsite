@@ -1,6 +1,6 @@
 const CACHE_NAME = 'ha-maslul-sheli-v1';
 const ASSETS = [
-  './personal-life-coach.html',
+  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'

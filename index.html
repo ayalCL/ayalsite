@@ -871,7 +871,7 @@ function fileToBase64(file){
   }
   if(supabaseClient){
     supabaseClient.auth.onAuthStateChange((event, session)=>{
-      if(event === 'SIGNED_IN' && session && session.user && state.lang){
+      if(event === 'SIGNED_IN' && session && session.user){
         currentUser = session.user;
         afterAuth();
       }
