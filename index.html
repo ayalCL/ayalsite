@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>המסלול שלי</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#171B1F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="המסלול שלי">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bg: #171B1F;
+    --bg-elev: #20262C;
+    --bg-elev-2: #2A323A;
+    --line: #3A434C;
+    --text: #ECE9E1;
+    --text-dim: #9BA3AA;
+    --accent: #E0A458;
+    --accent-dim: #8A6B3E;
+    --good: #7FA37A;
+    --ring-track: #2E363E;
+    --radius: 4px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Heebo', sans-serif;
+    font-weight:400;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    line-height:1.6;
+  }
+  #app{
+    width:100%;
+    max-width:480px;
+    min-height:100vh;
+    background: var(--bg);
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    border-inline:1px solid var(--line);
+  }
+  h1,h2,h3{
+    font-family:'Frank Ruhl Libre', serif;
+    font-weight:700;
+    line-height:1.25;
+  }
+  .screen{
+    display:none;
+    flex-direction:column;
+    padding: 32px 24px 28px;
+    flex:1;
+    animation: fadein .35s ease;
+  }
+  .screen.active{display:flex;}
+  @keyframes fadein{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  .eyebrow{ color: var(--accent); font-size:13px; margin-bottom:10px; }
+  h1{ font-size:30px; margin-bottom:14px; }
+  h2{ font-size:24px; margin-bottom:12px; }
+  p.lede{ color: var(--text-dim); font-size:16px; margin-bottom: 24px; }
+
+  .lang-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:20px; }
+  .lang-card{
+    background: var(--bg-elev); border:1px solid var(--line); border-radius: var(--radius);
+    padding:26px 12px; text-align:center; cursor:pointer; font-size:18px; font-family:'Frank Ruhl Libre', serif; font-weight:700;
+  }
+  .lang-card:active{ border-color: var(--accent); }
+
+  .goal-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 20px; }
+  .goal-card{
+    background: var(--bg-elev); border:1px solid var(--line); border-radius: var(--radius);
+    padding:16px 12px; text-align:center; cursor:pointer; font-size:15px; color: var(--text);
+    transition: border-color .15s, background .15s; user-select:none;
+  }
+  .goal-card.selected{ border-color: var(--accent); background: linear-gradient(0deg, rgba(224,164,88,0.12), rgba(224,164,88,0.12)), var(--bg-elev); }
+  .goal-card.selected::after{
+    content: attr(data-order); display:inline-block; margin-inline-start:6px;
+    color: var(--accent); font-family:'Frank Ruhl Libre', serif; font-weight:700;
+  }
+
+  .choice-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+  .choice-row{ background: var(--bg-elev); border:1px solid var(--line); border-radius: var(--radius); padding:14px 16px; cursor:pointer; font-size:15px; }
+  .choice-row.selected{ border-color: var(--accent); background: linear-gradient(0deg, rgba(224,164,88,0.12), rgba(224,164,88,0.12)), var(--bg-elev); }
+
+  textarea, input[type=text], input[type=time], input[type=number], input[type=email]{
+    width:100%; background: var(--bg-elev); border:1px solid var(--line); border-radius: var(--radius);
+    color: var(--text); font-family:'Heebo', sans-serif; font-size:15px; padding:12px 14px; margin-bottom:16px; resize:vertical;
+  }
+  textarea:focus, input:focus{ outline:none; border-color: var(--accent); }
+  label.field-label{ font-size:13px; color: var(--text-dim); margin-bottom:6px; display:block; }
+
+  .slider-row{ margin-bottom: 20px; }
+  input[type=range]{ width:100%; accent-color: var(--accent); }
+  .slider-value{ font-family:'Frank Ruhl Libre', serif; font-size:20px; color:var(--accent); margin-top:4px; }
+
+  .toggle-row{ display:flex; align-items:center; justify-content:space-between; background: var(--bg-elev); border:1px solid var(--line); border-radius: var(--radius); padding:14px 16px; margin-bottom:20px; }
+  .switch{ width:42px; height:24px; background:var(--bg-elev-2); border-radius:20px; position:relative; cursor:pointer; border:1px solid var(--line); flex-shrink:0; }
+  .switch::after{ content:''; position:absolute; top:2px; right:2px; width:18px; height:18px; background:var(--text-dim); border-radius:50%; transition:.2s; }
+  html[dir="ltr"] .switch::after{ right:auto; left:2px; }
+  .switch.on{ background: var(--accent-dim); border-color: var(--accent); }
+  .switch.on::after{ background: var(--accent); right:20px; }
+  html[dir="ltr"] .switch.on::after{ right:auto; left:20px; }
+
+  .spacer{ flex:1; }
+
+  button.primary{
+    background: var(--accent); color: #1A1408; border:none; border-radius: var(--radius);
+    padding:15px 20px; font-family:'Heebo', sans-serif; font-weight:600; font-size:16px; cursor:pointer; width:100%;
+  }
+  button.primary:disabled{ opacity:.4; cursor:not-allowed; }
+  button.primary:active:not(:disabled){ transform: scale(.98); }
+  button.ghost{
+    background:none; border:1px solid var(--line); color: var(--text-dim); border-radius: var(--radius);
+    padding:13px 20px; font-family:'Heebo', sans-serif; font-size:15px; cursor:pointer; width:100%; margin-top:10px;
+  }
+  button.link{ background:none; border:none; color: var(--accent); font-size:13px; cursor:pointer; text-decoration:underline; padding:6px 0; }
+
+  .progress-dots{ display:flex; gap:6px; margin-bottom:26px; }
+  .dot{ height:3px; flex:1; background: var(--line); border-radius:2px; }
+  .dot.done{ background: var(--accent); }
+
+  .loading-wrap{ display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; text-align:center; }
+  .ring{ width:74px; height:74px; border-radius:50%; border: 3px solid var(--ring-track); border-top-color: var(--accent); animation: spin 1s linear infinite; margin-bottom:22px; }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  .loading-text{ color: var(--text-dim); font-size:15px; }
+
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom: 22px; }
+  .streak{ display:flex; align-items:center; gap:8px; }
+  .streak-ring{
+    width:34px; height:34px; border-radius:50%; border:2px solid var(--accent);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Frank Ruhl Libre', serif; font-size:14px; font-weight:700; color:var(--accent);
+  }
+  .plan-item{
+    background: var(--bg-elev); border:1px solid var(--line); border-radius: var(--radius);
+    padding:14px 16px; margin-bottom:10px; display:flex; align-items:flex-start; gap:12px; cursor:pointer;
+  }
+  .plan-item .box{
+    width:20px; height:20px; border:1.5px solid var(--text-dim); border-radius:4px; flex-shrink:0; margin-top:2px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .plan-item.checked .box{ background: var(--good); border-color: var(--good); }
+  .plan-item.checked .box::after{ content:'✓'; color:#111; font-size:13px; }
+  .plan-item .txt .t{ font-size:15px; margin-bottom:2px; }
+  .plan-item .txt .d{ font-size:13px; color: var(--text-dim); }
+  .plan-item.checked .txt .t{ color: var(--text-dim); text-decoration: line-through; }
+
+  .coach-note{
+    background: var(--bg-elev); border-inline-start:3px solid var(--accent); border-radius: var(--radius);
+    padding:14px 16px; margin-bottom: 22px; font-size:14.5px; color: var(--text);
+  }
+  .coach-note b{ color: var(--accent); font-weight:600; }
+
+  .tracker-row{ display:flex; gap:10px; margin-bottom:20px; }
+  .tracker-box{ flex:1; background: var(--bg-elev); border:1px solid var(--line); border-radius: var(--radius); padding:12px; }
+  .tracker-box label{ font-size:12px; color:var(--text-dim); display:block; margin-bottom:6px; }
+  .tracker-box input{ margin-bottom:0; padding:8px 10px; font-size:14px; }
+
+  .section-title{ font-size:13px; color: var(--text-dim); margin: 22px 0 10px; }
+
+  .scan-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background: var(--bg-elev); border:1px dashed var(--line); border-radius: var(--radius);
+    padding:12px; margin-bottom:10px; font-size:14px; color: var(--text-dim); cursor:pointer;
+  }
+
+  #errorBox{
+    background:#3A2323; border:1px solid #6b3535; color:#e3b3b3; padding:12px 14px; border-radius:var(--radius); font-size:13px; margin-bottom:16px; display:none;
+  }
+  .config-warning{
+    background:#3A2E23; border:1px solid #6b5535; color:#e3c9b3; padding:12px 14px; border-radius:var(--radius); font-size:13px; margin-bottom:16px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- SCREEN: language pick -->
+  <section class="screen active" id="s-lang">
+    <div class="spacer"></div>
+    <div id="langPickView">
+      <h1 style="font-size:24px;">באיזו שפה תרצה לעבוד?</h1>
+      <h1 style="font-size:24px; margin-top:-6px;">Which language would you like to work in?</h1>
+      <p class="lede">אפשר לשנות בהמשך &nbsp;•&nbsp; You can change this later.</p>
+      <div class="lang-grid">
+        <div class="lang-card" onclick="pickLang('he')">עברית</div>
+        <div class="lang-card" onclick="pickLang('en')">English</div>
+      </div>
+    </div>
+    <div id="langConfirmView" style="display:none;">
+      <h2 id="langConfirmText"></h2>
+      <div class="spacer" style="min-height:20px;"></div>
+      <button class="primary" onclick="confirmLang(true)" id="langYesBtn"></button>
+      <button class="ghost" onclick="confirmLang(false)" id="langNoBtn"></button>
+    </div>
+    <div class="spacer"></div>
+  </section>
+
+  <!-- SCREEN: config missing (shown only if the Supabase project isn't wired up yet) -->
+  <section class="screen" id="s-config">
+    <div class="spacer"></div>
+    <div class="eyebrow" data-i18n="brand">המסלול שלי</div>
+    <h2 data-i18n="config_title">כמעט מוכן - חסר חיבור לשרת</h2>
+    <p class="lede" data-i18n="config_sub">כדי שהכניסה עם אימייל תעבוד, צריך לחבר פרויקט Supabase. פתח את הקובץ ומלא SUPABASE_URL ו-SUPABASE_ANON_KEY למעלה בקוד.</p>
+  </section>
+
+  <!-- SCREEN: email auth -->
+  <section class="screen" id="s-auth">
+    <div class="spacer"></div>
+    <div class="eyebrow" data-i18n="brand">המסלול שלי</div>
+    <h1 data-i18n="intro_title">היי, ברוכים הבאים! 👋<br>מה נשמע?</h1>
+    <p class="lede" data-i18n="auth_sub">מתחברים עם האימייל שלך - בלי סיסמה, פשוט קישור.</p>
+    <label class="field-label" data-i18n="auth_email_label">כתובת אימייל</label>
+    <input type="email" id="authEmailInput" placeholder="you@example.com">
+    <div id="authError" style="display:none; background:#3A2323; border:1px solid #6b3535; color:#e3b3b3; padding:10px 12px; border-radius:var(--radius); font-size:13px; margin-bottom:16px;"></div>
+    <div id="authSent" style="display:none; background:#22312A; border:1px solid #3a5a45; color:#a9d4bb; padding:12px 14px; border-radius:var(--radius); font-size:13px; margin-bottom:16px;"></div>
+    <div class="spacer"></div>
+    <button class="primary" id="authSendBtn" data-i18n="auth_send_btn" onclick="sendMagicLink()">שלח לי קישור כניסה</button>
+  </section>
+
+  <!-- SCREEN: Intro -->
+  <section class="screen" id="s-intro">
+    <div class="spacer"></div>
+    <div class="eyebrow" data-i18n="brand">המסלול שלי</div>
+    <h1 data-i18n="intro_title">היי, ברוכים הבאים! 👋<br>מה נשמע?</h1>
+    <p class="lede" data-i18n="intro_sub">בוא נכיר קצת, ונבנה ביחד תוכנית שבאמת מתאימה לך. כל יום מספרים בקצרה מה קרה — והתוכנית של מחר נבנית לפי זה.</p>
+    <div class="spacer"></div>
+    <button class="primary" data-i18n="intro_btn" onclick="go('s-goals')">בואו נתחיל</button>
+  </section>
+
+  <!-- SCREEN: goals multi-select -->
+  <section class="screen" id="s-goals">
+    <div class="progress-dots">
+      <div class="dot done"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    <h2 data-i18n="goals_title">על מה בכלל תרצה לעבוד?</h2>
+    <p class="lede" data-i18n="goals_sub">אפשר לבחור כמה תחומים.</p>
+    <div class="goal-grid" id="goalGrid"></div>
+    <div class="spacer"></div>
+    <button class="primary" id="btnGoalsNext" data-i18n="btn_continue" onclick="goToFocus()" disabled>המשך</button>
+  </section>
+
+  <!-- SCREEN: what to start first -->
+  <section class="screen" id="s-focus">
+    <div class="progress-dots">
+      <div class="dot done"></div><div class="dot done"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    <h2 data-i18n="focus_title">במה תרצה להתחיל ראשון?</h2>
+    <p class="lede" data-i18n="focus_sub">מתוך מה שבחרת — מה הכי חשוב לך עכשיו.</p>
+    <div class="choice-list" id="focusList"></div>
+    <div class="spacer"></div>
+    <button class="primary" data-i18n="btn_continue" onclick="go('s-checkintime')">המשך</button>
+  </section>
+
+  <!-- SCREEN: check-in time -->
+  <section class="screen" id="s-checkintime">
+    <div class="progress-dots">
+      <div class="dot done"></div><div class="dot done"></div><div class="dot done"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    <h2 data-i18n="checkintime_title">באיזו שעה נתאם איתך בערב?</h2>
+    <p class="lede" data-i18n="checkintime_sub">שם נדווח יחד קצר על היום — 30 שניות, לא יותר.</p>
+    <label class="field-label" data-i18n="checkintime_label">שעת ה-check-in היומי</label>
+    <input type="time" id="checkinTime" value="20:30">
+    <div class="spacer"></div>
+    <button class="primary" data-i18n="btn_continue" onclick="go('s-details')">המשך</button>
+  </section>
+
+  <!-- SCREEN: deeper details -->
+  <section class="screen" id="s-details">
+    <div class="progress-dots">
+      <div class="dot done"></div><div class="dot done"></div><div class="dot done"></div><div class="dot done"></div><div class="dot"></div>
+    </div>
+    <h2 data-i18n="details_title">עוד קצת עליך</h2>
+    <p class="lede" data-i18n="details_sub">כדי שהתוכנית תתאים לחיים האמיתיים שלך, לא לגרסה האידיאלית.</p>
+
+    <label class="field-label" data-i18n="details_time_label">כמה זמן פנוי יש לך ביום, בממוצע?</label>
+    <div class="slider-row">
+      <input type="range" min="10" max="120" step="5" value="30" id="timeSlider" oninput="document.getElementById('timeVal').textContent=this.value">
+      <div class="slider-value"><span id="timeVal">30</span> <span data-i18n="minutes_word">דקות</span></div>
+    </div>
+
+    <label class="field-label" data-i18n="details_fails_label">מה בדרך כלל גורם לך לוותר על תוכניות?</label>
+    <textarea id="whatFails" rows="2" data-i18n-placeholder="details_fails_ph" placeholder="למשל: ימים עמוסים, עייפות בערב, חוסר מוטיבציה אחרי כישלון אחד..."></textarea>
+
+    <label class="field-label" data-i18n="details_extra_label">משהו נוסף שכדאי שנדע עליך? (אופציונלי)</label>
+    <textarea id="extraInfo" rows="2" data-i18n-placeholder="details_extra_ph" placeholder="סדר יום, ניסיון קודם, כל דבר רלוונטי"></textarea>
+
+    <div class="toggle-row" onclick="toggleWeight(event)">
+      <div>
+        <div style="font-size:15px;" data-i18n="weight_toggle_title">מעקב משקל (ירידה/עלייה)</div>
+        <div style="font-size:12px; color:var(--text-dim); margin-top:2px;" data-i18n="weight_toggle_sub">מפעיל מעקב קלוריות</div>
+      </div>
+      <div class="switch" id="weightSwitch"></div>
+    </div>
+
+    <div class="spacer"></div>
+    <button class="primary" data-i18n="details_btn" onclick="buildPlan()">בנה לי תוכנית ראשונה</button>
+  </section>
+
+  <!-- SCREEN: loading -->
+  <section class="screen" id="s-loading">
+    <div class="loading-wrap">
+      <div class="ring"></div>
+      <div class="loading-text" id="loadingText">בונה תוכנית מותאמת אישית...</div>
+    </div>
+  </section>
+
+  <!-- SCREEN: today -->
+  <section class="screen" id="s-today">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow" id="todayLabel">היום</div>
+        <h2 style="margin-bottom:0;" data-i18n="today_title">התוכנית שלך</h2>
+      </div>
+      <div class="streak">
+        <div class="streak-ring" id="dayCount">1</div>
+      </div>
+    </div>
+
+    <div id="errorBox"></div>
+    <div class="coach-note" id="coachNote"></div>
+
+    <div id="planList"></div>
+
+    <div id="weightTrackerSection" style="display:none;">
+      <div class="section-title" data-i18n="tracker_title">מעקב היום</div>
+      <div class="scan-btn" id="scanBtn" onclick="document.getElementById('foodPhotoInput').click()">📷 <span data-i18n="scan_btn">סרוק ארוחה</span></div>
+      <input type="file" id="foodPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleFoodPhoto(event)">
+      <div id="foodScanResult" style="display:none; margin-bottom:16px;"></div>
+      <div class="tracker-row">
+        <div class="tracker-box">
+          <label data-i18n="calories_label">קלוריות היום</label>
+          <input type="number" id="caloriesInput" placeholder="0">
+        </div>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+    <button class="primary" data-i18n="today_btn" onclick="go('s-checkin')">דווח על היום (ערב)</button>
+    <button class="link" data-i18n="signout_btn" onclick="signOut()">התנתק</button>
+  </section>
+
+  <!-- SCREEN: evening check-in -->
+  <section class="screen" id="s-checkin">
+    <h2 data-i18n="checkin_title">איך היה היום?</h2>
+    <p class="lede" data-i18n="checkin_sub">קצר ולעניין — זה כל מה שצריך.</p>
+
+    <label class="field-label" data-i18n="checkin_did_label">מה עשית היום?</label>
+    <textarea id="ciDid" rows="2" data-i18n-placeholder="checkin_did_ph" placeholder="מה בפועל הספקת מהתוכנית"></textarea>
+
+    <label class="field-label" data-i18n="checkin_hard_label">מה היה קשה?</label>
+    <textarea id="ciHard" rows="2" data-i18n-placeholder="checkin_hard_ph" placeholder="מה הקשה עליך, אם היה משהו"></textarea>
+
+    <label class="field-label" data-i18n="checkin_focus_label">על מה תרצה להתמקד מחר?</label>
+    <textarea id="ciFocus" rows="2" data-i18n-placeholder="checkin_focus_ph" placeholder="לא חובה למלא — אפשר להשאיר ל-AI להחליט"></textarea>
+
+    <div class="spacer"></div>
+    <button class="primary" data-i18n="checkin_btn" onclick="submitCheckin()">שלח דיווח</button>
+  </section>
+
+</div>
+
+<script>
+// ====== ONE-TIME SETUP: fill these in after creating your Supabase project ======
+// Supabase Dashboard -> Project Settings -> API
+const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL"; // e.g. https://xxxxx.supabase.co
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+// ===================================================================================
+
+let supabaseClient = null;
+let currentUser = null;
+
+const I18N = {
+  he: {
+    brand: 'המסלול שלי',
+    config_title: 'כמעט מוכן - חסר חיבור לשרת',
+    config_sub: 'כדי שהכניסה עם אימייל תעבוד, צריך לחבר פרויקט Supabase. פתח את הקובץ ומלא SUPABASE_URL ו-SUPABASE_ANON_KEY למעלה בקוד.',
+    auth_sub: 'מתחברים עם האימייל שלך - בלי סיסמה, פשוט קישור.',
+    auth_email_label: 'כתובת אימייל',
+    auth_send_btn: 'שלח לי קישור כניסה',
+    auth_sent_msg: 'שלחנו לך קישור! תבדוק את תיבת האימייל (וגם ספאם) ותלחץ עליו כדי להתחבר.',
+    auth_error_generic: 'לא הצלחתי לשלוח את הקישור. בדוק שהאימייל תקין ונסה שוב.',
+    intro_title: 'היי, ברוכים הבאים! 👋<br>מה נשמע?',
+    intro_sub: 'בוא נכיר קצת, ונבנה ביחד תוכנית שבאמת מתאימה לך. כל יום מספרים בקצרה מה קרה — והתוכנית של מחר נבנית לפי זה.',
+    intro_btn: 'בואו נתחיל',
+    goals_title: 'על מה בכלל תרצה לעבוד?',
+    goals_sub: 'אפשר לבחור כמה תחומים.',
+    btn_continue: 'המשך',
+    focus_title: 'במה תרצה להתחיל ראשון?',
+    focus_sub: 'מתוך מה שבחרת — מה הכי חשוב לך עכשיו.',
+    checkintime_title: 'באיזו שעה נתאם איתך בערב?',
+    checkintime_sub: 'שם נדווח יחד קצר על היום — 30 שניות, לא יותר.',
+    checkintime_label: 'שעת ה-check-in היומי',
+    details_title: 'עוד קצת עליך',
+    details_sub: 'כדי שהתוכנית תתאים לחיים האמיתיים שלך, לא לגרסה האידיאלית.',
+    details_time_label: 'כמה זמן פנוי יש לך ביום, בממוצע?',
+    minutes_word: 'דקות',
+    details_fails_label: 'מה בדרך כלל גורם לך לוותר על תוכניות?',
+    details_fails_ph: 'למשל: ימים עמוסים, עייפות בערב, חוסר מוטיבציה אחרי כישלון אחד...',
+    details_extra_label: 'משהו נוסף שכדאי שנדע עליך? (אופציונלי)',
+    details_extra_ph: 'סדר יום, ניסיון קודם, כל דבר רלוונטי',
+    weight_toggle_title: 'מעקב משקל (ירידה/עלייה)',
+    weight_toggle_sub: 'מפעיל מעקב קלוריות',
+    details_btn: 'בנה לי תוכנית ראשונה',
+    loading_first: 'בונה תוכנית ראשונה...',
+    loading_next: 'בונה את התוכנית של מחר...',
+    today_title: 'התוכנית שלך',
+    today_label_prefix: 'יום',
+    coach_prefix: 'המאמן:',
+    tracker_title: 'מעקב היום',
+    scan_btn: 'סרוק ארוחה',
+    calories_label: 'קלוריות היום',
+    today_btn: 'דווח על היום (ערב)',
+    signout_btn: 'התנתק',
+    checkin_title: 'איך היה היום?',
+    checkin_sub: 'קצר ולעניין — זה כל מה שצריך.',
+    checkin_did_label: 'מה עשית היום?',
+    checkin_did_ph: 'מה בפועל הספקת מהתוכנית',
+    checkin_hard_label: 'מה היה קשה?',
+    checkin_hard_ph: 'מה הקשה עליך, אם היה משהו',
+    checkin_focus_label: 'על מה תרצה להתמקד מחר?',
+    checkin_focus_ph: 'לא חובה למלא — אפשר להשאיר ל-AI להחליט',
+    checkin_btn: 'שלח דיווח',
+    err_prefix: 'שגיאה: ',
+    err_suffix: ' — הצגתי תוכנית זמנית במקום.'
+  },
+  en: {
+    brand: 'My Path',
+    config_title: 'Almost ready - server not connected yet',
+    config_sub: 'For email sign-in to work, a Supabase project needs to be connected. Open the file and fill in SUPABASE_URL and SUPABASE_ANON_KEY near the top of the code.',
+    auth_sub: 'Sign in with your email - no password, just a link.',
+    auth_email_label: 'Email address',
+    auth_send_btn: 'Send me a sign-in link',
+    auth_sent_msg: 'Link sent! Check your inbox (and spam folder) and click it to sign in.',
+    auth_error_generic: 'Could not send the link. Check the email address and try again.',
+    intro_title: 'Hey, welcome! 👋<br>How\'s it going?',
+    intro_sub: 'Let\'s get to know each other, and build a plan that actually fits you. Every day you share a short report — and tomorrow\'s plan is built from it.',
+    intro_btn: 'Let\'s start',
+    goals_title: 'What do you want to work on, in general?',
+    goals_sub: 'You can pick a few areas.',
+    btn_continue: 'Continue',
+    focus_title: 'What would you like to start with first?',
+    focus_sub: 'From what you picked — what matters most right now.',
+    checkintime_title: 'What time should we check in with you in the evening?',
+    checkintime_sub: 'That\'s where we\'ll do a short report on the day — 30 seconds, no more.',
+    checkintime_label: 'Daily check-in time',
+    details_title: 'A bit more about you',
+    details_sub: 'So the plan fits your real life, not an ideal version of it.',
+    details_time_label: 'How much free time do you have per day, on average?',
+    minutes_word: 'minutes',
+    details_fails_label: 'What usually makes you give up on plans?',
+    details_fails_ph: 'e.g. busy days, evening tiredness, losing motivation after one slip...',
+    details_extra_label: 'Anything else worth knowing about you? (optional)',
+    details_extra_ph: 'Daily schedule, past experience, anything relevant',
+    weight_toggle_title: 'Weight tracking (loss/gain)',
+    weight_toggle_sub: 'Turns on calorie tracking',
+    details_btn: 'Build my first plan',
+    loading_first: 'Building your first plan...',
+    loading_next: 'Building tomorrow\'s plan...',
+    today_title: 'Your plan',
+    today_label_prefix: 'Day',
+    coach_prefix: 'Coach:',
+    tracker_title: 'Today\'s tracking',
+    scan_btn: 'Scan a meal',
+    calories_label: 'Calories today',
+    today_btn: 'Report on today (evening)',
+    signout_btn: 'Sign out',
+    checkin_title: 'How was today?',
+    checkin_sub: 'Short and to the point — that\'s all it takes.',
+    checkin_did_label: 'What did you do today?',
+    checkin_did_ph: 'What you actually got done from the plan',
+    checkin_hard_label: 'What was hard?',
+    checkin_hard_ph: 'What was difficult, if anything',
+    checkin_focus_label: 'What would you like to focus on tomorrow?',
+    checkin_focus_ph: 'Optional — you can leave it to the AI to decide',
+    checkin_btn: 'Send report',
+    err_prefix: 'Error: ',
+    err_suffix: ' — showing a temporary plan instead.'
+  }
+};
+
+function t(key){
+  const lang = state.lang || 'he';
+  return (I18N[lang] && I18N[lang][key]) || I18N.he[key] || key;
+}
+
+function applyI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    el.innerHTML = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+    el.setAttribute('placeholder', t(el.getAttribute('data-i18n-placeholder')));
+  });
+  document.getElementById('langYesBtn').textContent = t('yes') || (state.lang==='en' ? 'Yes' : 'כן');
+  document.getElementById('langNoBtn').textContent = t('no') || (state.lang==='en' ? 'No, change language' : 'לא, שנה שפה');
+}
+
+const state = {
+  lang: null,
+  goals: [],
+  goalOrder: [],
+  focus: null,
+  checkinTime: '20:30',
+  timeAvailable: 30,
+  whatFails: '',
+  extraInfo: '',
+  weightTracking: false,
+  day: 1,
+  plan: null,
+  history: []
+};
+
+const ALL_GOALS_HE = ['כושר','שינה','לימודים','קריירה','כסף','אנגלית','ספורט','הרגלים','ניהול זמן'];
+const ALL_GOALS_EN = ['Fitness','Sleep','Studies','Career','Money','English','Sport','Habits','Time management'];
+
+// ---------- language ----------
+let pendingLang = null;
+function pickLang(lang){
+  pendingLang = lang;
+  document.getElementById('langPickView').style.display = 'none';
+  document.getElementById('langConfirmView').style.display = 'block';
+  const heTxt = 'האם תרצה להתחבר בשפה הזו?';
+  const enTxt = 'Do you want to continue in this language?';
+  document.getElementById('langConfirmText').textContent = lang === 'he' ? heTxt : enTxt;
+  document.getElementById('langYesBtn').textContent = lang === 'he' ? 'כן' : 'Yes';
+  document.getElementById('langNoBtn').textContent = lang === 'he' ? 'לא, שנה שפה' : 'No, change language';
+}
+function confirmLang(yes){
+  if(!yes){
+    document.getElementById('langPickView').style.display = 'block';
+    document.getElementById('langConfirmView').style.display = 'none';
+    pendingLang = null;
+    return;
+  }
+  state.lang = pendingLang;
+  document.documentElement.setAttribute('lang', state.lang === 'en' ? 'en' : 'he');
+  document.documentElement.setAttribute('dir', state.lang === 'en' ? 'ltr' : 'rtl');
+  applyI18n();
+  renderGoals();
+  startAuthFlow();
+}
+
+// ---------- Supabase auth ----------
+function initSupabase(){
+  if(!SUPABASE_URL || SUPABASE_URL.indexOf('YOUR_SUPABASE') === 0 || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.indexOf('YOUR_SUPABASE') === 0){
+    return false;
+  }
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return true;
+}
+
+async function startAuthFlow(){
+  if(!initSupabase()){
+    go('s-config');
+    return;
+  }
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(session && session.user){
+    currentUser = session.user;
+    await afterAuth();
+  } else {
+    go('s-auth');
+  }
+}
+
+async function sendMagicLink(){
+  const email = document.getElementById('authEmailInput').value.trim();
+  const errBox = document.getElementById('authError');
+  const sentBox = document.getElementById('authSent');
+  errBox.style.display = 'none';
+  sentBox.style.display = 'none';
+  if(!email || email.indexOf('@') === -1){
+    errBox.style.display = 'block';
+    errBox.textContent = t('auth_error_generic');
+    return;
+  }
+  document.getElementById('authSendBtn').disabled = true;
+  const { error } = await supabaseClient.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  });
+  document.getElementById('authSendBtn').disabled = false;
+  if(error){
+    errBox.style.display = 'block';
+    errBox.textContent = error.message;
+    return;
+  }
+  sentBox.style.display = 'block';
+  sentBox.textContent = t('auth_sent_msg');
+}
+
+async function signOut(){
+  if(supabaseClient){ await supabaseClient.auth.signOut(); }
+  currentUser = null;
+  Object.assign(state, { goals:[], goalOrder:[], focus:null, checkinTime:'20:30', timeAvailable:30, whatFails:'', extraInfo:'', weightTracking:false, day:1, plan:null, history:[] });
+  go('s-auth');
+}
+
+async function afterAuth(){
+  const loaded = await loadStateFromDb();
+  applyI18n();
+  renderGoals();
+  if(loaded && state.plan){
+    renderToday();
+  } else {
+    go('s-intro');
+  }
+}
+
+// ---------- state persistence (Supabase table, one row per user) ----------
+async function loadStateFromDb(){
+  if(!supabaseClient || !currentUser) return false;
+  const { data, error } = await supabaseClient
+    .from('app_state')
+    .select('state')
+    .eq('user_id', currentUser.id)
+    .maybeSingle();
+  if(error || !data || !data.state) return false;
+  Object.assign(state, data.state);
+  return true;
+}
+
+async function saveState(){
+  if(!supabaseClient || !currentUser) return;
+  await supabaseClient.from('app_state').upsert({
+    user_id: currentUser.id,
+    state: state,
+    updated_at: new Date().toISOString()
+  });
+}
+
+// ---------- goals / focus ----------
+function renderGoals(){
+  const grid = document.getElementById('goalGrid');
+  grid.innerHTML = '';
+  const list = state.lang === 'en' ? ALL_GOALS_EN : ALL_GOALS_HE;
+  list.forEach(g=>{
+    const el = document.createElement('div');
+    el.className = 'goal-card';
+    el.textContent = g;
+    if(state.goalOrder.includes(g)){
+      el.classList.add('selected');
+      el.setAttribute('data-order', state.goalOrder.indexOf(g)+1);
+    }
+    el.onclick = ()=>toggleGoal(g, el);
+    grid.appendChild(el);
+  });
+  document.getElementById('btnGoalsNext').disabled = state.goalOrder.length===0;
+}
+function toggleGoal(g, el){
+  const idx = state.goalOrder.indexOf(g);
+  if(idx>-1){
+    state.goalOrder.splice(idx,1);
+    el.classList.remove('selected');
+    el.removeAttribute('data-order');
+  } else {
+    state.goalOrder.push(g);
+    el.classList.add('selected');
+    el.setAttribute('data-order', state.goalOrder.length);
+  }
+  document.querySelectorAll('.goal-card.selected').forEach(card=>{
+    const g2 = card.textContent.trim();
+    const pos = state.goalOrder.indexOf(g2)+1;
+    card.setAttribute('data-order', pos);
+  });
+  document.getElementById('btnGoalsNext').disabled = state.goalOrder.length===0;
+}
+function goToFocus(){
+  state.goals = [...state.goalOrder];
+  const list = document.getElementById('focusList');
+  list.innerHTML = '';
+  state.goals.forEach(g=>{
+    const row = document.createElement('div');
+    row.className = 'choice-row';
+    row.textContent = g;
+    row.onclick = ()=>{
+      document.querySelectorAll('.choice-row').forEach(r=>r.classList.remove('selected'));
+      row.classList.add('selected');
+      state.focus = g;
+    };
+    list.appendChild(row);
+  });
+  if(state.goals.length && !state.focus){ state.focus = state.goals[0]; list.firstChild.classList.add('selected'); }
+  go('s-focus');
+}
+function toggleWeight(e){
+  state.weightTracking = !state.weightTracking;
+  document.getElementById('weightSwitch').classList.toggle('on', state.weightTracking);
+}
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ---------- AI calls (via Supabase Edge Function - API key stays on the server) ----------
+async function askCoach(payload){
+  const { data, error } = await supabaseClient.functions.invoke('ask-coach', { body: payload });
+  if(error) throw new Error(error.message || 'edge function error');
+  if(data && data.error) throw new Error((data.error.message) || 'AI error');
+  const textBlock = (data.content||[]).find(b=>b.type==='text');
+  if(!textBlock) throw new Error('no text in response');
+  let clean = textBlock.text.trim().replace(/^```json/,'').replace(/^```/,'').replace(/```$/,'').trim();
+  return JSON.parse(clean);
+}
+
+function systemBase(){
+  const langInstruction = state.lang === 'en' ? 'Answer in English.' : 'ענה בעברית.';
+  return `You are "My Path" / "המסלול שלי" - a personal AI coach. Build the user a short, practical daily plan that fits their real actual capacity, and give basic-but-effective practical advice in the area they chose.
+Principles: a setback is information, not grounds for criticism. Never lecture. If something didn't work, reduce the load. The plan must fit the free time reported. Tone: supportive, direct, short, no cliches.
+${langInstruction}
+Respond ONLY with valid JSON in this exact format, no other text:
+{ "coach_note": "one or two sentences, warm personal tone", "plan": [ {"title": "short task title", "detail": "short one-line detail"}, ...2-4 items... ] }`;
+}
+
+async function buildPlan(){
+  state.checkinTime = document.getElementById('checkinTime').value;
+  state.timeAvailable = document.getElementById('timeSlider').value;
+  state.whatFails = document.getElementById('whatFails').value;
+  state.extraInfo = document.getElementById('extraInfo').value;
+
+  const userPrompt = `New user data:
+Areas chosen: ${state.goals.join(', ')}
+Wants to start with: ${state.focus}
+Free time per day: ${state.timeAvailable} minutes
+What usually makes them give up: ${state.whatFails || 'not specified'}
+Extra info: ${state.extraInfo || 'none'}
+Weight tracking enabled: ${state.weightTracking ? 'yes' : 'no'}
+
+Build them a plan for day one, fitted to the time they actually have.`;
+
+  await runPlanRequest(userPrompt, 'loading_first', false);
+}
+
+async function runPlanRequest(userPrompt, loadingKey, isCheckin){
+  go('s-loading');
+  document.getElementById('loadingText').textContent = t(loadingKey);
+  try{
+    const result = await askCoach({ mode: 'text', system: systemBase(), prompt: userPrompt });
+    state.plan = result;
+    if(isCheckin) state.day += 1;
+    await saveState();
+    renderToday();
+  } catch(err){
+    state.plan = fallbackPlan(isCheckin);
+    if(isCheckin) state.day += 1;
+    await saveState();
+    renderToday();
+    const eb = document.getElementById('errorBox');
+    eb.style.display = 'block';
+    eb.textContent = t('err_prefix') + err.message + t('err_suffix');
+  }
+}
+
+function fallbackPlan(isCheckin){
+  if(isCheckin){
+    return {
+      coach_note: state.lang === 'en' ? "Got your report. Moving forward, at a pace that fits you." : 'קיבלתי את הדיווח. ממשיכים הלאה, בקצב שמתאים לך.',
+      plan: state.lang === 'en'
+        ? [{title: `A bit more ${state.focus}`, detail: 'Building on what you did yesterday'}]
+        : [{title: `עוד קצת ${state.focus}`, detail: 'בהמשך למה שעשית אתמול'}]
+    };
+  }
+  return {
+    coach_note: state.lang === 'en'
+      ? `Let's start simple. First goal: ${state.focus}. ${state.timeAvailable} minutes is just enough to begin.`
+      : `בוא נתחיל פשוט. יעד ראשון: ${state.focus}. ${state.timeAvailable} דקות זה בדיוק מספיק כדי להתחיל.`,
+    plan: state.lang === 'en'
+      ? [{title: `10 minutes of ${state.focus}`, detail: 'A small start, no pressure'}, {title: 'Write down how it felt', detail: 'One sentence in the evening'}]
+      : [{title: `10 דקות ${state.focus}`, detail: 'התחלה קטנה, בלי לחץ'}, {title: 'לרשום איך זה הרגיש', detail: 'משפט אחד בערב'}]
+  };
+}
+
+function renderToday(){
+  const eb = document.getElementById('errorBox');
+  eb.style.display = 'none';
+  eb.textContent = '';
+  document.getElementById('todayLabel').textContent = t('today_label_prefix') + ' ' + state.day;
+  document.getElementById('dayCount').textContent = state.day;
+  document.getElementById('coachNote').innerHTML = '<b>' + t('coach_prefix') + '</b> ' + escapeHtml(state.plan.coach_note || '');
+  const list = document.getElementById('planList');
+  list.innerHTML = '';
+  (state.plan.plan||[]).forEach((item)=>{
+    const row = document.createElement('div');
+    row.className = 'plan-item';
+    row.innerHTML = `<div class="box"></div><div class="txt"><div class="t">${escapeHtml(item.title)}</div><div class="d">${escapeHtml(item.detail||'')}</div></div>`;
+    row.onclick = ()=>row.classList.toggle('checked');
+    list.appendChild(row);
+  });
+  document.getElementById('weightTrackerSection').style.display = state.weightTracking ? 'block' : 'none';
+  go('s-today');
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+async function submitCheckin(){
+  const report = {
+    did: document.getElementById('ciDid').value,
+    hard: document.getElementById('ciHard').value,
+    focus: document.getElementById('ciFocus').value,
+    calories: state.weightTracking ? document.getElementById('caloriesInput').value : null
+  };
+  state.history.push({day: state.day, report, plan: state.plan});
+
+  const historyStr = state.history.slice(-5).map(h=>
+    `Day ${h.day}: plan was [${(h.plan.plan||[]).map(p=>p.title).join(', ')}]. Report: did: "${h.report.did}", hard: "${h.report.hard}", wants to focus on: "${h.report.focus}"`
+  ).join('\n');
+
+  const userPrompt = `User background: areas ${state.goals.join(', ')}, main focus ${state.focus}, free time ${state.timeAvailable} minutes/day, what makes them give up: ${state.whatFails || 'not specified'}. Weight tracking: ${state.weightTracking ? 'yes' : 'no'}.
+
+Recent history:
+${historyStr}
+
+Build the plan for day ${state.day+1}, based on what worked and what didn't.`;
+
+  await runPlanRequest(userPrompt, 'loading_next', true);
+}
+
+// ---------- food photo scan (vision, via same edge function) ----------
+async function handleFoodPhoto(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const resultBox = document.getElementById('foodScanResult');
+  resultBox.style.display = 'block';
+  resultBox.style.color = 'var(--text-dim)';
+  resultBox.style.fontSize = '13px';
+  resultBox.textContent = state.lang === 'en' ? 'Analyzing the photo…' : 'מנתח את התמונה…';
+
+  try{
+    const base64 = await fileToBase64(file);
+    const visionPrompt = state.lang === 'en'
+      ? 'This is a photo of a meal. Estimate its calories as best you can from the image. Respond ONLY with JSON: {"calories": <number>, "description": "<short description of the meal, one line>"}. No other text.'
+      : 'זו תמונה של ארוחה. תן הערכת קלוריות טובה ככל האפשר לפי מה שרואים בתמונה. ענה אך ורק ב-JSON: {"calories": <מספר>, "description": "<תיאור קצר של הארוחה, שורה אחת>"}. בלי שום טקסט נוסף.';
+    const result = await askCoach({ mode: 'vision', image: base64, mediaType: file.type || 'image/jpeg', prompt: visionPrompt });
+    document.getElementById('caloriesInput').value = result.calories;
+    resultBox.style.color = 'var(--good)';
+    resultBox.textContent = '✓ ' + (result.description || '') + ' (~' + result.calories + (state.lang === 'en' ? ' cal)' : ' קלוריות)');
+  } catch(err){
+    resultBox.style.color = '#e3b3b3';
+    resultBox.textContent = (state.lang === 'en' ? 'Could not analyze the photo: ' : 'לא הצלחתי לנתח את התמונה: ') + err.message;
+  }
+}
+
+function fileToBase64(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=> resolve(reader.result.split(',')[1]);
+    reader.onerror = ()=> reject(new Error('read failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// ---------- init ----------
+(function init(){
+  if(!initSupabase()){
+    // still show bilingual language screen; s-config will show after language pick
+  }
+  if(supabaseClient){
+    supabaseClient.auth.onAuthStateChange((event, session)=>{
+      if(event === 'SIGNED_IN' && session && session.user && state.lang){
+        currentUser = session.user;
+        afterAuth();
+      }
+    });
+  }
+})();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "המסלול שלי",
+  "short_name": "המסלול שלי",
+  "description": "AI אישי שבונה לך תוכנית יומית לפי מי שאתה באמת",
+  "start_url": "./personal-life-coach.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#171B1F",
+  "theme_color": "#171B1F",
+  "dir": "rtl",
+  "lang": "he",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
