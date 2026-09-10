@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     let anthropicBody;
     if (body.mode === "vision") {
       anthropicBody = {
-        model: "claude-sonnet-4-6",
+        model: "claude-sonnet-5",
         max_tokens: 300,
         messages: [{
           role: "user",
@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
       };
     } else {
       anthropicBody = {
-        model: "claude-sonnet-4-6",
+        model: "claude-sonnet-5",
         max_tokens: 1000,
         system: body.system,
         messages: [{ role: "user", content: body.prompt }],
