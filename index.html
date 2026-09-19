@@ -347,7 +347,7 @@
     </div>
 
     <div class="spacer"></div>
-    <button class="primary" data-i18n="today_btn" onclick="go('s-checkin')">דווח על היום (ערב)</button>
+    <button class="primary" id="checkinBtn" onclick="go('s-checkin')">דווח על היום (ערב)</button>
     <button class="link" data-i18n="signout_btn" onclick="signOut()">התנתק</button>
   </section>
 
@@ -422,6 +422,7 @@ const I18N = {
     scan_btn: 'סרוק ארוחה',
     calories_label: 'קלוריות היום',
     today_btn: 'דווח על היום (ערב)',
+    checkin_locked_prefix: 'הדיווח ייפתח בשעה ',
     signout_btn: 'התנתק',
     checkin_title: 'איך היה היום?',
     checkin_sub: 'קצר ולעניין — זה כל מה שצריך.',
@@ -475,6 +476,7 @@ const I18N = {
     scan_btn: 'Scan a meal',
     calories_label: 'Calories today',
     today_btn: 'Report on today (evening)',
+    checkin_locked_prefix: 'The report opens at ',
     signout_btn: 'Sign out',
     checkin_title: 'How was today?',
     checkin_sub: 'Short and to the point — that\'s all it takes.',
@@ -798,7 +800,22 @@ function renderToday(){
     list.appendChild(row);
   });
   document.getElementById('weightTrackerSection').style.display = state.weightTracking ? 'block' : 'none';
+  updateCheckinBtn();
   go('s-today');
+}
+
+function updateCheckinBtn(){
+  const btn = document.getElementById('checkinBtn');
+  const now = new Date();
+  const nowStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  const target = state.checkinTime || '20:30';
+  if(nowStr < target){
+    btn.disabled = true;
+    btn.textContent = t('checkin_locked_prefix') + target;
+  } else {
+    btn.disabled = false;
+    btn.textContent = t('today_btn');
+  }
 }
 
 function escapeHtml(str){
