@@ -233,10 +233,8 @@ if(S.stage==='app')S.tab='home';
 function addCustom(name){name=name.trim();if(!name)return;const hit=Object.entries(SPORTS).find(([k,s])=>s.name===name);
   if(hit){if(!S.sports.includes(hit[0]))S.sports.push(hit[0]);return}
   const k='c'+Date.now();S.custom.push({k,name});SPORTS[k]=makeCustom(name);S.sports.push(k)}
-const GOALS={basketball:['לשפר אחוזי קליעה','זריקה מחוץ לקשת','כדרור עם שתי הידיים','להיכנס לקבוצה','כושר למשחק','קפיצה גבוהה יותר'],
-  climbing:['לעלות דרגה','כוח אצבעות','תליית אצבעות','טכניקת רגליים','לסגור פרויקט','גמישות ירכיים'],
-  gym:['להעלות מסה','לחטב','להעלות משקלים','להתאמן קבוע','גב חזק ויציבה'],
-  calisthenics:['מתח ראשון / יותר חזרות','עמידת ידיים','מאסל אפ','שליטה בגוף','פלאנש','מקבילים']};
+const GOALS={basketball:['לשפר אחוזי קליעה','כדרור עם שתי הידיים','להיכנס לקבוצה','כושר למשחק'],climbing:['לעלות דרגה','כוח אצבעות','טכניקת רגליים','לסגור פרויקט'],
+  gym:['להעלות מסה','לחטב','להעלות משקלים','להתאמן קבוע'],calisthenics:['מתח ראשון / יותר חזרות','הנדסטנד','מאסל אפ','שליטה בגוף']};
 const AREAS={
   sport:{name:'ספורט',sub:'אימונים, טכניקה, פציעות',icon:'⚡'},
   study:{name:'לימודים',sub:'ריכוז, מבחנים, הרגלי למידה',
