@@ -242,6 +242,8 @@ function makeCustom(name){return{name,sub:'התחום שלך',custom:true,
   ex:['טכניקה כללית','תנועה מרכזית'],metric:{label:'דקות אימון בשבוע',unit:'',vals:[60,90,90,120,150]}}}
 (S.custom||[]).forEach(c=>{SPORTS[c.k]=makeCustom(c.name)});
 if(S.stage==='app')S.tab='home';
+function dropDemo(){for(const k of Object.keys(S.hist||{})){S.hist[k]=(S.hist[k]||[]).filter(e=>!e.demo);if(!S.hist[k].length)delete S.hist[k]}}
+dropDemo();
 function addCustom(name){name=name.trim();if(!name)return;const hit=Object.entries(SPORTS).find(([k,s])=>s.name===name);
   if(hit){if(!S.sports.includes(hit[0]))S.sports.push(hit[0]);return}
   const k='c'+Date.now();S.custom.push({k,name});SPORTS[k]=makeCustom(name);S.sports.push(k)}
@@ -304,7 +306,7 @@ async function onSignedIn(session){
   try{const {data,error}=await SB.from('app_state').select('state').eq('user_id',USER.id).maybeSingle();if(error)throw error;
     const r=data?.state;
     if(r&&r.stage==='app'&&(S.stage!=='app'||!S.updated||(r.updated||0)>=S.updated)){
-      S=Object.assign(fresh(),r);rebuildCustom();lastSent=JSON.stringify(r);S.tab='home';
+      S=Object.assign(fresh(),r);rebuildCustom();dropDemo();lastSent=JSON.stringify(r);S.tab='home';
       try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
       toast(`ברוך שובך${S.name?', '+S.name:''}!`)}
     SYNC='cloud'}catch(e){console.warn('load failed',e);SYNC='error'}
@@ -583,8 +585,6 @@ function sparkSvg(vals){if(vals.length<2)return '';const mx=Math.max(...vals),mn
   return `<svg class="spark" viewBox="0 0 120 44"><line x1="0" y1="40" x2="120" y2="40" stroke="var(--line)"/><polygon points="4,40 ${p} ${l[0]},40" fill="var(--accent-soft)"/><polyline points="${p}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round"/><circle cx="${l[0]}" cy="${l[1]}" r="3.5" fill="var(--accent)"/></svg>`}
 function ring(score){const c=2*Math.PI*34,f=c*score/10;const col=score>=8?'var(--good)':score>=5?'var(--accent)':'var(--bad)';
   return `<svg class="ring" viewBox="0 0 84 84"><circle cx="42" cy="42" r="34" fill="none" stroke="var(--surface-2)" stroke-width="8"/><circle cx="42" cy="42" r="34" fill="none" stroke="${col}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${f} ${c}" transform="rotate(-90 42 42)"/><text x="42" y="52" text-anchor="middle" font-family="Karantina,Heebo,sans-serif" font-weight="700" font-size="34" fill="var(--ink)">${score}</text></svg>`}
-function seedHist(){const sp=S.first,e=SPORTS[sp]?.ex[0];const k=sp+'|'+e;if(!S.hist[k]){const d=n=>new Date(Date.now()-n*864e5).toISOString().slice(0,10);
-  S.hist[k]=[{date:d(21),score:5,good:['קצב טוב בביצוע'],fix:['יציבות בבסיס התנועה'],drill:'תרגול איטי עם עצירה',demo:true},{date:d(7),score:6,good:['יציבות השתפרה'],fix:['טווח תנועה חלקי בסוף'],drill:'3 סטים בטווח מלא, משקל/קושי נמוך',demo:true}];save()}}
 function areaCard(a){const A=AREAS[a],m=A.metric;const last=m.vals[m.vals.length-1],first=m.vals[0];
   const better=m.lowerBetter?last<first:last>first;
   return `<section class="card"><div class="row between"><div class="eyebrow">${esc(A.name)} · ${esc(m.label)}</div><span class="tag demo">דוגמה</span></div>
@@ -592,7 +592,7 @@ function areaCard(a){const A=AREAS[a],m=A.metric;const last=m.vals[m.vals.length
 function progressView(){const areaCards=nonSport().map(areaCard).join('');
   if(!hasSport())return `<div class="stack"><h1 class="disp" style="font-size:48px">התקדמות</h1>${areaCards}</div>`;
   if(!S.first||!SPORTS[S.first])S.first=S.sports[0];
-  seedHist();if(!S.psport||!S.sports.includes(S.psport))S.psport=S.first;const sp=SPORTS[S.psport];if(!S.ex||!sp.ex.includes(S.ex))S.ex=sp.ex[0];
+  if(!S.psport||!S.sports.includes(S.psport))S.psport=S.first;const sp=SPORTS[S.psport];if(!S.ex||!sp.ex.includes(S.ex))S.ex=sp.ex[0];
   const m=sp.metric;const nums=m.num||m.vals;const last=m.vals[m.vals.length-1];const k=S.psport+'|'+S.ex;const H=S.hist[k]||[];const latest=H[H.length-1];
   return `<div class="stack"><h1 class="disp" style="font-size:48px">התקדמות</h1>${areaCards}
   <div class="eyebrow" style="margin-top:6px">ספורט</div>
@@ -607,7 +607,7 @@ function progressView(){const areaCards=nonSport().map(areaCard).join('');
    <label class="btn block" for="vidIn" style="cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>צלם או העלה סרטון</label>
    <input type="file" id="vidIn" accept="video/*,image/*" class="hidden">
    <div id="anaOut"></div>
-   ${latest?resultHtml(latest,H[H.length-2]):''}</section>
+   ${latest?resultHtml(latest,H[H.length-2]):'<p class="small muted">עוד לא שלחת סרטון בתרגיל הזה. אחרי הסרטון הראשון יופיעו כאן הציון, מה טוב ומה לתקן.</p>'}</section>
   ${H.length?`<section class="card"><div class="row between"><div class="eyebrow">היסטוריה · ${esc(S.ex)}</div>${sparkSvg(H.map(x=>x.score))}</div>
    ${H.slice().reverse().map(x=>`<div class="hist"><div><div class="small num muted">${esc(x.date)}</div><div class="small">${esc(x.fix?.[0]||'')}</div></div><div class="row">${x.demo?'<span class="tag demo">דוגמה</span>':''}<span class="s">${x.score}</span></div></div>`).join('')}</section>`:''}
   </div>`}
@@ -619,19 +619,39 @@ function resultHtml(r,prev){const d=prev?r.score-prev.score:null;
    ${r.good?.length?`<div><div class="t" style="color:var(--good)">מה טוב</div><ul class="clean">${r.good.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
    ${r.fix?.length?`<div><div class="t" style="color:var(--accent)">מה לתקן</div><ul class="clean">${r.fix.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
    ${r.drill?`<div class="banner"><b>תרגיל לתיקון:</b> ${esc(r.drill)}</div>`:''}</div>`}
-async function seek(v,t){return new Promise(res=>{const done=()=>{v.removeEventListener('seeked',done);res()};v.addEventListener('seeked',done);v.currentTime=t;setTimeout(done,2500)})}
-async function grabFrames(file,n){const url=URL.createObjectURL(file);try{
-  if(file.type.startsWith('image/'))return[file];
-  const v=document.createElement('video');v.muted=true;v.playsInline=true;v.preload='auto';v.src=url;
-  await new Promise((res,rej)=>{v.onloadeddata=res;v.onerror=()=>rej(new Error('bad'));setTimeout(()=>rej(new Error('timeout')),15000)});
-  const dur=isFinite(v.duration)&&v.duration>0?v.duration:1;const sc=Math.min(1,720/Math.max(v.videoWidth,v.videoHeight));
-  const c=document.createElement('canvas');c.width=Math.round(v.videoWidth*sc);c.height=Math.round(v.videoHeight*sc);const ctx=c.getContext('2d');const out=[];
-  for(let i=0;i<n;i++){await seek(v,dur*(i+.5)/n);ctx.drawImage(v,0,0,c.width,c.height);out.push(await new Promise(r=>c.toBlob(r,'image/jpeg',.82)))}
-  return out.filter(Boolean)}finally{URL.revokeObjectURL(url)}}
+function once(el,ev,ms){return new Promise((res,rej)=>{let t;const h=()=>{clearTimeout(t);el.removeEventListener('error',er);res()};
+  const er=()=>{clearTimeout(t);el.removeEventListener(ev,h);rej(new Error('decode'))};
+  t=setTimeout(()=>{el.removeEventListener(ev,h);el.removeEventListener('error',er);rej(new Error('timeout'))},ms);
+  el.addEventListener(ev,h,{once:true});el.addEventListener('error',er,{once:true})})}
+async function grabFrames(file,n){
+  if((file.type||'').startsWith('image/'))return[file];
+  const url=URL.createObjectURL(file);const v=document.createElement('video');
+  v.muted=true;v.defaultMuted=true;v.playsInline=true;v.setAttribute('playsinline','');v.setAttribute('muted','');v.preload='auto';
+  v.style.cssText='position:fixed;left:-10px;top:0;width:2px;height:2px;opacity:0;pointer-events:none';document.body.append(v);
+  try{
+    const meta=once(v,'loadedmetadata',25000);v.src=url;v.load();await meta;
+    // phones often decode nothing until the video has played for a moment
+    try{await v.play();await wait(150);v.pause()}catch(e){}
+    if(v.readyState<2)await once(v,'loadeddata',8000).catch(()=>{});
+    let dur=v.duration;
+    if(!isFinite(dur)||dur<=0){v.currentTime=1e6;await once(v,'seeked',5000).catch(()=>{});dur=isFinite(v.duration)&&v.duration>0?v.duration:2}
+    const W=v.videoWidth,H=v.videoHeight;if(!W||!H)throw new Error('decode');
+    const sc=Math.min(1,720/Math.max(W,H));const c=document.createElement('canvas');c.width=Math.round(W*sc);c.height=Math.round(H*sc);const ctx=c.getContext('2d');const out=[];
+    for(let i=0;i<n;i++){const t=Math.min(Math.max(0.05,dur*(i+.5)/n),Math.max(0.05,dur-0.1));
+      const sk=once(v,'seeked',6000).catch(()=>{});v.currentTime=t;await sk;
+      if(v.readyState<2)await once(v,'canplay',3000).catch(()=>{});
+      await new Promise(r=>requestAnimationFrame(()=>r()));
+      ctx.drawImage(v,0,0,c.width,c.height);const b=await new Promise(r=>c.toBlob(r,'image/jpeg',.82));if(b)out.push(b)}
+    if(!out.length)throw new Error('decode');
+    return out}
+  finally{try{v.pause();v.removeAttribute('src');v.load()}catch(e){}v.remove();URL.revokeObjectURL(url)}}
+function videoErr(e){return e?.message==='decode'
+  ?'הטלפון לא הצליח לפתוח את הסרטון הזה (כנראה פורמט שהדפדפן לא תומך בו). נסה לצלם ישר מכאן עם כפתור הצילום, או לשלוח 2-3 צילומי מסך מהסרטון.'
+  :'הסרטון לקח יותר מדי זמן להיטען. נסה סרטון קצר יותר (עד 15 שניות), או צלם ישר מכאן.'}
 async function thumb(blob){const u=URL.createObjectURL(blob);try{const im=new Image();im.src=u;await im.decode();const c=document.createElement('canvas');const s=150/Math.max(im.width,im.height);c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.7)}catch(e){return null}finally{URL.revokeObjectURL(u)}}
 async function analyze(file){const out=$('#anaOut');const k=S.psport+'|'+S.ex;const H=S.hist[k]||(S.hist[k]=[]);const prev=H[H.length-1];
   out.innerHTML='<p class="muted">מכין פריימים מהסרטון…</p>';
-  let fr=[];try{fr=await grabFrames(file,Math.max(1,Math.min(4,IMG||4)))}catch(e){out.innerHTML='<div class="banner bad">לא הצלחתי לקרוא את הסרטון. נסה קובץ MP4 או MOV קצר, או תמונה.</div>';return}
+  let fr=[];try{fr=await grabFrames(file,Math.max(1,Math.min(4,IMG||4)))}catch(e){console.warn('video',e);out.innerHTML=`<div class="banner bad">${esc(videoErr(e))}</div>`;return}
   const thumbs=(await Promise.all(fr.map(thumb))).filter(Boolean);
   out.innerHTML=`<div class="frames">${thumbs.map(t=>`<img src="${t}" alt="">`).join('')}</div><p class="muted">המאמן מנתח את הטכניקה… (עד דקה)</p>`;
   let r;
@@ -814,8 +834,9 @@ document.addEventListener('change',e=>{const t=e.target;
   if(t.id==='foodIn'&&t.files[0])scanFood(t.files[0]);
   if(t.id==='stepsShot'&&t.files[0])readSteps(t.files[0]);
   if(t.id==='chatFile'&&t.files[0]){const f=t.files[0];t.value='';sendMedia(f)}});
-async function sendMedia(f){if(chatBusy)return;toast('מכין את הסרטון…');let fr;
-  try{fr=await grabFrames(f,Math.max(1,Math.min(4,IMG||4)))}catch(e){toast('לא הצלחתי לקרוא את הקובץ. נסה סרטון MP4 או MOV קצר, או תמונה');return}
+async function sendMedia(f){if(chatBusy)return;const box=$('#msgs');const b=document.createElement('div');b.className='msg a think';b.textContent='מכין את הסרטון…';box?.append(b);scrollTo(0,document.body.scrollHeight);let fr;
+  try{fr=await grabFrames(f,Math.max(1,Math.min(4,IMG||4)))}catch(e){console.warn('video',e);b.remove();S.chat.push({role:'assistant',content:videoErr(e)});save();render();return}
+  b.remove();
   const thumbs=(await Promise.all(fr.map(thumb))).filter(Boolean);const i=$('#chatIn');const txt=i.value;i.value='';
   sendChat(txt,{frames:fr,thumbs,video:f.type.startsWith('video/')})}
 async function readSteps(f){if(!(AI&&IMG)){toast('קריאת צילום מסך עובדת כשהמאמן AI מחובר. בינתיים הקלד את המספר');return}
