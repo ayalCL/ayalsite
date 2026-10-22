@@ -214,6 +214,18 @@ const BACK=[['neck',100,66],['upperback',100,112],['lowback',100,196],['shoulder
 const MOVES=['באחיזה','במתח / משיכה','בלחיצה / דחיפה','בקפיצה / נחיתה','בכפיפה','בסיבוב','גם במנוחה'];
 const RELIEF=['מנוחה','חימום','קרח','תנועה עדינה','שום דבר'];
 const SINCE=['היום','כמה ימים','שבוע-שבועיים','יותר מחודש'];
+const SYMPTOMS={neck:['כאב בסיבוב הראש','נוקשות בבוקר','כאב שמקרין לכתף או ליד','כאב ראש'],
+  shoulder:['כאב בהרמת היד מעל הראש','קליק או תפיסה','חולשה ביד','כאב בשכיבה על הצד'],
+  elbow:['כאב בצד הפנימי','כאב בצד החיצוני','כאב באחיזה חזקה','נפיחות'],
+  wrist:['כאב בהישענות על כף היד','חולשה באחיזה','נפיחות','קליק'],
+  fingers:['כאב בבסיס האצבע','נפיחות באצבע','קושי לכופף','שמעתי פופ'],
+  upperback:['כאב בין השכמות','נוקשות','כאב בנשימה עמוקה','כאב בישיבה ממושכת'],
+  lowback:['נפיחות','קושי בתזוזה','כאב בהתכופפות','כאב שמקרין לרגל','נוקשות בבוקר','כאב בישיבה ממושכת'],
+  hip:['כאב בהרמת הברך','כאב במפשעה','כאב בריצה','נוקשות'],
+  knee:['נפיחות','כאב בירידה במדרגות','כאב מתחת לפיקה','הברך בורחת','קליק או תפיסה'],
+  hamstring:['כאב בריצה מהירה','כאב במתיחה','שטף דם','כאב בישיבה'],
+  ankle:['נפיחות','קושי לדרוך','כאב בסיבוב הקרסול','שטף דם'],
+  achilles:['כאב בצעדים הראשונים בבוקר','כאב בקפיצה','עיבוי בגיד','כאב בעלייה על בהונות']};
 const FLAGS=['נפיחות חזקה או שינוי צבע','חוסר תחושה או עקצוץ','לא מצליח להזיז או לשאת משקל','התחיל אחרי נפילה או מכה','שמעתי קליק או "פופ" ברגע הפציעה','כאב חזק בלילה שלא עובר'];
 
 const $=s=>document.querySelector(s);
@@ -395,7 +407,7 @@ function loginView(){
    <button class="btn block" type="button" data-act="sendlink">${SB?'שלח לי קישור כניסה':'המשך'}</button>
    <p class="small muted">${SB?'בלי סיסמה: נשלח לך קישור למייל. ההתקדמות נשמרת בחשבון ומחכה לך בכל מכשיר.':'אין חיבור לשרת כרגע, אז ההתקדמות תישמר רק במכשיר הזה.'}</p></div>`}
 function focusOpts(){return [...nonSport().map(a=>({k:a,n:AREAS[a].name})),...(S.areas.includes('sport')?S.sports.map(k=>({k,n:SPORTS[k].name})):[])]}
-function steps(){return ['lang','areas',S.areas.includes('sport')?'sports':null,focusOpts().length>1?'first':null,'goals',nonSport().some(a=>['sleep','screen','study','language'].includes(a))?'details':null,'time','quit','checkin'].filter(Boolean)}
+function steps(){return ['lang','areas',S.areas.includes('sport')?'sports':null,'goals',nonSport().some(a=>['sleep','screen','study','language'].includes(a))?'details':null,'time'].filter(Boolean)}
 function onbView(){const L=steps();if(S.onbStep>=L.length)S.onbStep=L.length-1;const st=S.onbStep;const id=L[st];const N=L.length;
   const dots=`<div class="dots">${L.map((_,i)=>`<i class="${i<=st?'on':''}"></i>`).join('')}</div>`;
   const wrap=(q,title,sub,body,next,opt)=>`<div class="stack" style="padding-top:40px">${dots}<div class="row between"><div class="eyebrow">שאלה ${st+1} מתוך ${N}</div>${st>0?'<button class="skip" data-act="prev">חזרה</button>':''}</div>
@@ -422,11 +434,13 @@ function onbView(){const L=steps();if(S.onbStep>=L.length)S.onbStep=L.length-1;c
   if(id==='goals'){const sug=[...new Set([...(S.areas.includes('sport')?S.sports.flatMap(k=>GOALS[k]||[]):[]),...nonSport().flatMap(a=>AREAS[a].goals||[])])];
    return wrap(3,'מה המטרות שלך?','בחר מהרשימה או כתוב במילים שלך.',
    `${sug.length?ch(sug,'goalChips',true):''}<textarea id="goalsIn" rows="3" placeholder="למשל: להגיע ל-10 מתח עד הקיץ, לשפר את הזריקה מחוץ לקשת">${esc(S.goals)}</textarea>`,nextBtn(),true)}
-  if(id==='time')return wrap(4,'כמה זמן יש לך?','ככה המאמן בונה תוכנית שבאמת נכנסת לך לשבוע.',
+  if(id==='time')return wrap(4,'כמה זמן יש לך?','שאלה אחרונה. את השאר המאמן ישאל בצ׳אט.',
    `${S.areas.includes('sport')?`<div class="qlabel">רמה בספורט</div>${ch(LEVELS,'level',false)}`:''}
    <div class="qlabel">כמה ימים בשבוע?</div><div class="stepper"><button type="button" data-act="days" data-d="-1" aria-label="פחות">−</button><span class="disp num">${S.days}</span><button type="button" data-act="days" data-d="1" aria-label="יותר">+</button></div>
    <div class="qlabel">כמה זמן ביום?</div>${`<div class="row">${[30,45,60,90].map(m=>`<button class="chip" data-act="mins" data-v="${m}" aria-pressed="${S.minutes===m}">${m} דק׳</button>`).join('')}</div>`}
-   <div class="qlabel">מתי ביום בדרך כלל?</div>${ch(WHEN,'when',false)}`,nextBtn(),true);
+   <div class="qlabel">באיזו שעה לפתוח לך את דיווח הערב?</div>
+   <div class="row">${['18:00','19:00','20:00','21:00','22:00'].map(t=>`<button class="chip num" data-act="time" data-t="${t}" aria-pressed="${S.checkin===t}">${t}</button>`).join('')}</div>
+   <input type="time" id="timeIn" value="${S.checkin}" aria-label="שעה אחרת">`,`<button class="btn block" data-act="finish">יאללה, מתחילים</button>`);
   if(id==='quit')return wrap(5,'מה גורם לך לוותר?','אין תשובה לא נכונה. ככה המאמן יודע מתי לתמוך בך.',
    `${ch(QUIT,'quit',true)}<div class="qlabel">ניסית כבר תוכנית בעבר? מה עבד ומה לא?</div><textarea id="pastIn" rows="3" placeholder="למשל: התאמנתי חודשיים בחדר כושר ונשברתי במבחנים">${esc(S.past)}</textarea>`,nextBtn(),true);
   return wrap(6,'מתי לעשות לך check-in?','המאמן יפנה אליך כל יום בשעה הזו. אפשר לשנות אחר כך.',
@@ -484,6 +498,12 @@ function planItems(){const lastR=S.reports[S.reports.length-1];
   if(S.aiPlan&&S.aiPlan.date===today()&&S.aiPlan.items?.length)return{items:S.aiPlan.items.map(x=>[x.title,x.detail]),fromAI:true,note:S.aiPlan.note};
   if(lastR&&lastR.tomorrow?.length&&lastR.date!==today())return{items:lastR.tomorrow.map(x=>[x.title,x.detail]),fromReport:true};
   return{items:goalPlan(),fromReport:false}}
+function reportOpen(){const n=new Date();const hm=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');return hm>=(S.checkin||'20:00')}
+function reportCard(){const doneToday=S.reports.some(r=>r.date===today());
+  if(doneToday)return `<section class="card"><div class="eyebrow">דיווח ערב</div><div class="row"><span class="tag ok">דיווחת היום ✓</span></div><p class="small muted">התוכנית של מחר כבר מוכנה. דיווחת ${S.reports.length} פעמים. עקביות היא כל הסוד.</p></section>`;
+  if(!reportOpen())return `<section class="card"><div class="eyebrow">דיווח ערב</div><p class="small muted">הדיווח ייפתח היום ב-<b class="num">${esc(S.checkin)}</b>. בינתיים, תתמקד בתוכנית.</p></section>`;
+  return `<section class="card"><div class="eyebrow">דיווח ערב</div><h3>איך היה היום?</h3><p class="small muted">דקה אחת: מה עשית, מה היה קשה, במה הצלחת. המאמן בונה מזה את מחר.</p><button class="btn" data-act="report">לדווח</button>
+   ${S.reports.length?`<p class="small muted">דיווחת ${S.reports.length} פעמים. עקביות היא כל הסוד.</p>`:''}</section>`}
 function energyLine(){const e=S.energy[today()];
   if(e==='low')return 'אנרגיה נמוכה זה מידע, לא כישלון. היום עושים רק את 2 המשימות הראשונות בעצימות של 70%. עקביות לפני שלמות.';
   if(e==='mid')return 'יום רגיל. עושים את התוכנית כמו שהיא, ובסוף מדווחים מה עבד.';
@@ -505,8 +525,7 @@ function homeView(){const h=new Date().getHours();const hi=h<12?'בוקר טוב
    ${PLAN_BUSY?'<div class="banner">המאמן בונה לך תוכנית לפי המטרות שלך…</div>':fromAI&&note?`<div class="coachline">${esc(note)}</div>`:fromReport?'<div class="banner">התוכנית נבנתה מחדש לפי דיווח הערב שלך</div>':''}
    ${inj.length?`<div class="banner bad">שים לב: ${esc(REG[inj[0].region].n)} ${esc(inj[0].side)} בפציעה. דלג על כל תרגיל שמכאיב שם.</div>`:''}
    <div>${items.map(([t,d],i)=>`<label class="task ${done[i]?'done':''}"><input type="checkbox" id="task${i}" data-act="task" data-i="${i}" ${done[i]?'checked':''}><div><div class="t">${esc(t)}</div><div class="small muted">${esc(d)}</div></div></label>`).join('')}</div></section>
-  <section class="card"><div class="eyebrow">דיווח ערב</div><h3>איך היה היום?</h3><p class="small muted">דקה אחת: מה עשית, מה היה קשה, במה הצלחת. המאמן בונה מזה את מחר.</p><button class="btn" data-act="report">לדווח</button>
-   ${S.reports.length?`<p class="small muted">דיווחת ${S.reports.length} פעמים. עקביות היא כל הסוד.</p>`:''}</section>
+  ${reportCard()}
   <section class="card"><div class="row between"><div class="eyebrow">צעדים היום</div><span class="small muted num">יעד ${S.stepGoal.toLocaleString('he-IL')}</span></div>
    ${(()=>{const st=S.steps[today()]||0,pc=Math.min(100,Math.round(st/S.stepGoal*100));return `<div class="row between" style="align-items:flex-end"><span class="disp" style="font-size:52px">${st.toLocaleString('he-IL')}</span><span class="small ${pc>=100?'':'muted'}" style="${pc>=100?'color:var(--good);font-weight:700':''}">${pc>=100?'עברת את היעד!':pc+'% מהיעד'}</span></div>
    <div class="bar"><i style="width:${pc}%"></i></div>`})()}
@@ -528,7 +547,7 @@ function detectRegion(t){for(const[w,k]of RMAP)if(t.includes(w))return k;return 
 function coachView(){if(!S.chat.length){const g=[...S.goalChips,S.goals].filter(Boolean);const q=S.quit[0];
   S.chat.push({role:'assistant',content:S.lang==='en'
    ?`Hey${S.name?' '+S.name:''}! I'm your personal coach. We start with ${focusName()}, ${S.days} days a week, ${S.minutes} min a day.${g.length?`\nYour goal: **${g[0]}**.`:''}${q?`\nYou said "${q}" makes you quit, so we'll plan around it.`:''}\nWhat's the one thing you want to nail this month?`
-   :`היי${S.name?' '+S.name:''}! אני המאמן הצמוד שלך. מתחילים ב${focusName()}, ${S.days} ימים בשבוע, ${S.minutes} דק׳ ביום.${g.length?`\nהמטרה שלך: **${g[0]}**${g.length>1?` (ועוד ${g.length-1})`:''}.`:''}${q?`\nאמרת ש"${q}" גורם לך לוותר, אז נבנה את התוכנית סביב זה.`:''}\nמה הדבר האחד שהכי חשוב לך להשתפר בו החודש?`})}
+   :`היי${S.name?' '+S.name:''}! אני המאמן הצמוד שלך. מתחילים ב${focusName()}, ${S.days} ימים בשבוע, ${S.minutes} דק׳ ביום.${g.length?`\nהמטרה שלך: **${g[0]}**${g.length>1?` (ועוד ${g.length-1})`:''}.`:''}${q?`\nאמרת ש"${q}" גורם לך לוותר, אז נבנה את התוכנית סביב זה.`:''}\n${q?'מה הדבר האחד שהכי חשוב לך להשתפר בו החודש?':'שאלה אחת כדי להכיר אותך: מה בדרך כלל גורם לך לוותר על תוכנית?'}`})}
   return `<div class="msgs" id="msgs">${S.chat.map(m=>msgHtml(m)).join('')}</div>`}
 function msgHtml(m){let extra='';const th=m.thumbs?.length?`<div class="frames">${m.thumbs.map(t=>`<img src="${t}" alt="">`).join('')}</div>`:'';if(m.role==='user'&&PAIN.test(m.content)){const r=detectRegion(m.content);extra=`<button class="chip" style="align-self:flex-start" data-act="pain" data-r="${r||''}">פתח מפת גוף${r?' · '+REG[r].n:''}</button>`}
   return `<div class="msg ${m.role==='user'?'u':'a'}">${th}${fmt(m.content)}</div>${extra}`}
@@ -583,6 +602,8 @@ function progressView(){const areaCards=nonSport().map(areaCard).join('');
   <section class="card"><div class="eyebrow">בדיקת טכניקה</div><h3>הראה למאמן איך אתה עושה את זה</h3>
    <div class="tabs">${sp.ex.map(x=>`<button class="chip" data-act="ex" data-x="${esc(x)}" aria-pressed="${x===S.ex}">${esc(x)}</button>`).join('')}</div>
    <div class="banner">טיפ לצילום: ${esc(TIPS[S.ex]||'צלם מהצד, כל הגוף בפריים')}</div>
+   <input type="text" id="vidWhat" placeholder="מה אתה עושה בסרטון? (לא חובה, למשל: גלישה, בעיטה לשער)">
+   <p class="small muted">אפשר לשלוח כל פעילות. המאמן מזהה מה רואים בסרטון ומנתח את זה.</p>
    <label class="btn block" for="vidIn" style="cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>צלם או העלה סרטון</label>
    <input type="file" id="vidIn" accept="video/*,image/*" class="hidden">
    <div id="anaOut"></div>
@@ -591,7 +612,7 @@ function progressView(){const areaCards=nonSport().map(areaCard).join('');
    ${H.slice().reverse().map(x=>`<div class="hist"><div><div class="small num muted">${esc(x.date)}</div><div class="small">${esc(x.fix?.[0]||'')}</div></div><div class="row">${x.demo?'<span class="tag demo">דוגמה</span>':''}<span class="s">${x.score}</span></div></div>`).join('')}</section>`:''}
   </div>`}
 function resultHtml(r,prev){const d=prev?r.score-prev.score:null;
-  return `<div class="stack" style="border-top:1px solid var(--line);padding-top:12px"><div class="score">${ring(r.score)}<div><div class="eyebrow">ציון טכניקה ${r.demo?'<span class="tag demo">דוגמה</span>':''}</div>
+  return `<div class="stack" style="border-top:1px solid var(--line);padding-top:12px"><div class="score">${ring(r.score)}<div><div class="eyebrow">ציון טכניקה${r.activity?' · '+esc(r.activity):''} ${r.demo?'<span class="tag demo">דוגמה</span>':''}</div>
    ${d!==null?`<div class="t">${d>0?'עלייה של '+d+' מהפעם הקודמת':d<0?'ירידה של '+(-d)+' מהפעם הקודמת':'כמו בפעם הקודמת'}</div>`:'<div class="t">סרטון ראשון בתרגיל הזה</div>'}
    ${r.cue?`<div class="small muted">לזכור באימון: ${esc(r.cue)}</div>`:''}</div></div>
    ${r.thumbs?.length?`<div class="frames">${r.thumbs.map(t=>`<img src="${t}" alt="פריים מהסרטון">`).join('')}</div>`:''}
@@ -614,14 +635,16 @@ async function analyze(file){const out=$('#anaOut');const k=S.psport+'|'+S.ex;co
   const thumbs=(await Promise.all(fr.map(thumb))).filter(Boolean);
   out.innerHTML=`<div class="frames">${thumbs.map(t=>`<img src="${t}" alt="">`).join('')}</div><p class="muted">המאמן מנתח את הטכניקה… (עד דקה)</p>`;
   let r;
-  if(AI&&IMG){try{r=await AI.json(`אתה מאמן מומחה ל${SPORTS[S.psport].name}. מצורפות ${fr.length} תמונות ברצף מתוך סרטון של מתאמן שמבצע: ${S.ex}. נתח את הטכניקה כמו מאמן צמוד: ספציפי, קצר, מעשי.
+  const what=($('#vidWhat')?.value||'').trim();
+  if(AI&&IMG){try{r=await AI.json(`אתה מאמן מומחה לכל סוגי הספורט. מצורפות ${fr.length} תמונות ברצף מתוך סרטון. המתאמן בחר באפליקציה: ${S.ex} (${SPORTS[S.psport].name}).${what?' הוא כתב שבסרטון: '+what+'.':''}
+חשוב: נתח את מה שבאמת רואים בתמונות. אם זו פעילות אחרת ממה שנבחר (למשל גלישה במקום כדורסל), זהה אותה ותן משוב על הפעילות הזו. נתח את הטכניקה כמו מאמן צמוד: ספציפי, קצר, מעשי.
 ${prev?`בפעם הקודמת הציון היה ${prev.score} והתיקון העיקרי היה: ${prev.fix?.[0]||''}. התייחס אם השתפר.`:''}
-החזר רק JSON בעברית בצורה: {"visible":true,"score":7,"good":["עד 3 נקודות"],"fix":["עד 3 נקודות"],"drill":"תרגיל אחד לתיקון עם מינון","cue":"משפט של עד 6 מילים לזכור באימון"}.
+החזר רק JSON בעברית בצורה: {"activity":"מה רואים בסרטון, 1-3 מילים","visible":true,"score":7,"good":["עד 3 נקודות"],"fix":["עד 3 נקודות"],"drill":"תרגיל אחד לתיקון עם מינון","cue":"משפט של עד 6 מילים לזכור באימון"}.
 score בין 1 ל-10. אם התרגיל לא נראה בבירור בתמונות, החזר visible:false, score:0, ו-fix עם הנחיית צילום.`,{images:fr,modelTier:'default'})}
    catch(e){out.innerHTML=`<div class="banner bad">${esc(aiFail(e))}</div>`;return}
    if(r.visible===false||!r.score){out.innerHTML=`<div class="banner bad">לא רואים את התרגיל מספיק טוב. ${esc((r.fix||[]).join(' '))}</div>`;return}}
   else{await wait(1200);r={score:Math.min(10,(prev?.score||5)+1),good:['קצב אחיד לאורך הסט','מנח ראש ניטרלי'],fix:['שים לב לטווח התנועה בסוף כל חזרה','שמור על מרכז הכובד מעל הבסיס'],drill:'3 סטים איטיים (3 שנ׳ ירידה) בקושי נמוך',cue:'לאט ומלא',demo:true}}
-  const entry={date:today(),score:Math.round(Number(r.score)),good:[].concat(r.good||[]).slice(0,3),fix:[].concat(r.fix||[]).slice(0,3),drill:String(r.drill||''),cue:String(r.cue||''),thumbs,demo:!!r.demo};
+  const entry={date:today(),activity:String(r.activity||what||''),score:Math.round(Number(r.score)),good:[].concat(r.good||[]).slice(0,3),fix:[].concat(r.fix||[]).slice(0,3),drill:String(r.drill||''),cue:String(r.cue||''),thumbs,demo:!!r.demo};
   H.push(entry);save();render();toast(entry.demo?'מצב הדגמה: ניתוח אמיתי פועל כשהמאמן AI מחובר':'הניתוח נשמר בהיסטוריה')}
 
 /* ---------- sheets ---------- */
@@ -631,7 +654,7 @@ const head=(e,t)=>`<div class="row between"><div><div class="eyebrow">${e}</div>
 
 /* injury */
 let IJ=null;
-function openInjury(r,existing){IJ=existing?{...existing,step:1}:{region:r||null,side:'',view:'front',move:[],relief:[],pain:4,since:'',flags:[],step:r?1:0};
+function openInjury(r,existing){IJ=existing?{sym:[],other:'',...existing,step:1}:{region:r||null,side:'',view:'front',sym:[],other:'',move:[],relief:[],pain:4,since:'',flags:[],step:r?1:0};
   if(r&&!existing)IJ.side=['neck','upperback','lowback'].includes(r)?'':'';renderInj()}
 function figure(view){const spots=(view==='front'?FRONT:BACK).map(([k,x,y],i)=>`<g class="spot ${IJ.region===k&&sideOf(view,x,k)===IJ.side?'sel':''}" tabindex="0" role="button" aria-label="${REG[k].n}" data-act="spot" data-k="${k}" data-x="${x}"><circle cx="${x}" cy="${y}" r="18" fill="transparent"/><circle class="dot" cx="${x}" cy="${y}" r="9"/></g>`).join('');
   const L=(pts,w)=>`<polyline points="${pts}" fill="none" stroke="var(--fig)" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
@@ -654,12 +677,14 @@ function renderInj(){const s=IJ.step;const recent=activeInj();
    const sides=['neck','upperback','lowback'].includes(IJ.region)?'':`<div class="stack"><div class="t">איזה צד?</div><div class="row">${chips(['ימין','שמאל','שניהם'],'side',false)}</div></div>`;
    return sheet(`${head(esc(REG[IJ.region].n),'ספר לי עוד')}
    ${sides}
+   <div class="stack"><div class="t">מה אתה מרגיש?</div><div class="row">${chips(SYMPTOMS[IJ.region]||[],'sym',true)}</div></div>
+   <div class="stack"><div class="t">משהו אחר? ספר במילים שלך מה קרה</div><textarea id="injOther" rows="3" placeholder="למשל: נפלתי על היד בבולדר, ומאז כואב כשאני נשען עליה">${esc(IJ.other||'')}</textarea></div>
    <div class="stack"><div class="t">באיזו תנועה זה כואב?</div><div class="row">${chips(MOVES,'move',true)}</div></div>
    <div class="stack"><div class="t">מה מקל?</div><div class="row">${chips(RELIEF,'relief',true)}</div></div>
    <div class="stack"><div class="t">כמה חזק?</div><div class="row" style="flex-wrap:nowrap"><input class="slider" type="range" min="1" max="10" id="painR" value="${IJ.pain}" data-act="painr"><span class="painval" id="painV">${IJ.pain}</span></div></div>
    <div class="stack"><div class="t">מתי זה התחיל?</div><div class="row">${chips(SINCE,'since',false)}</div></div>
    <div class="card" style="background:var(--bad-soft)"><div class="t" style="color:var(--bad)">יש אחד מאלה?</div>${FLAGS.map((f,i)=>`<label class="flag"><input type="checkbox" id="flag${i}" data-act="flag" data-v="${esc(f)}" ${IJ.flags.includes(f)?'checked':''}>${esc(f)}</label>`).join('')}</div>
-   <div class="row"><button class="btn ghost" data-act="injback">חזרה</button><button class="btn" style="flex:1" data-act="injgo" ${IJ.move.length?'':'disabled'}>מה עושים?</button></div>`)}
+   <div class="row"><button class="btn ghost" data-act="injback">חזרה</button><button class="btn" style="flex:1" data-act="injgo">מה עושים?</button></div>`)}
   if(s===2)return sheet(`${head(esc(REG[IJ.region].n+' '+IJ.side),'בודק…')}<p class="muted">המאמן מצליב את מה שסיפרת עם התוכנית שלך…</p>`);
   const r=IJ.result;
   if(IJ.red)return sheet(`${head('חשוב','לבדיקה אצל איש מקצוע')}
@@ -687,12 +712,13 @@ async function runInj(){IJ.red=IJ.flags.length>0||IJ.pain>=8;if(IJ.red){IJ.step=
   IJ.step=2;renderInj();let r;
   if(AI){try{r=await AI.json(`אתה מאמן ספורט צמוד עם ידע בשיקום פציעות ספורט נפוצות (לא רופא). מתאמן שעוסק ב: ${S.sports.map(k=>SPORTS[k].name).join(', ')} מדווח:
 אזור: ${REG[IJ.region].n} (${IJ.side||'מרכז'}), רקמות אפשריות: ${REG[IJ.region].t}.
-כואב: ${IJ.move.join(', ')}. מקל: ${IJ.relief.join(', ')||'לא צוין'}. עוצמה: ${IJ.pain}/10. התחיל: ${IJ.since||'לא צוין'}. אין סימנים אדומים.
+מה מרגיש: ${(IJ.sym||[]).join(', ')||'לא צוין'}. ${IJ.other?'תיאור במילים שלו: "'+IJ.other+'". ':''}כואב בתנועה: ${IJ.move.join(', ')||'לא צוין'}. מקל: ${IJ.relief.join(', ')||'לא צוין'}. עוצמה: ${IJ.pain}/10. התחיל: ${IJ.since||'לא צוין'}. אין סימנים אדומים.
 תוכנית האימונים שלו היום: ${planItems().items.map(x=>x[0]).join(' | ')}.
+אם התיאור במילים שלו מעיד על סימן אדום (נפילה קשה, עיוות, חוסר תחושה, לא מצליח לדרוך), כתוב ב-likely שצריך בדיקה אצל רופא, ואל תיתן תרגילי חיזוק.
 החזר רק JSON בעברית: {"likely":"מה כנראה קורה, ניסוח של 'כנראה', שורה אחת","explain":"2 משפטים פשוטים","release":[{"name":"","how":"מינון"}],"strengthen":[{"name":"","how":"מינון"}],"adjust":["שינויים ספציפיים באימונים שלו, עד 3"],"recheck":"מתי לגשת לפיזיותרפיסט"}. 2 תרגילי שחרור, 2 חיזוק.`,{modelTier:'default'})}catch(e){toast(aiFail(e));r=localInj()}}
   else{await wait(900);r=localInj()}
   IJ.result=r;IJ.step=3;renderInj()}
-function saveInj(){const ex=S.injuries.find(i=>i.id===IJ.id);const rec={id:IJ.id||Date.now(),region:IJ.region,side:IJ.side||'מרכז',move:IJ.move,relief:IJ.relief,pain:IJ.pain,since:IJ.since,flags:IJ.flags,result:IJ.result,red:IJ.red,date:today(),active:true};
+function saveInj(){const ex=S.injuries.find(i=>i.id===IJ.id);const rec={id:IJ.id||Date.now(),region:IJ.region,side:IJ.side||'מרכז',sym:IJ.sym||[],other:IJ.other||'',move:IJ.move,relief:IJ.relief,pain:IJ.pain,since:IJ.since,flags:IJ.flags,result:IJ.result,red:IJ.red,date:today(),active:true};
   if(ex)Object.assign(ex,rec);else S.injuries.push(rec);save();closeSheet();render();toast('נשמר. המאמן יבדוק איתך מחר')}
 
 /* evening report */
@@ -714,12 +740,16 @@ async function sendReport(){const g=k=>$('#r_'+k).value.trim();const rep={date:t
    <button class="btn block ghost" data-act="close">סגור</button>`;render()}
 
 /* food */
-function openFood(){sheet(`${head('סריקת אוכל','מה על הצלחת?')}
-  <label class="btn block" for="foodIn" style="cursor:pointer">צלם או העלה תמונה</label><input type="file" id="foodIn" accept="image/*" class="hidden">
+function openFood(){sheet(`${head('סריקת אוכל','מה אכלת?')}
+  <textarea id="foodText" rows="3" placeholder="כתוב מה אכלת, למשל: 2 פרוסות לחם מלא עם חומוס, ביצה וסלט"></textarea>
+  <button class="btn block" type="button" data-act="foodtext">חשב לפי מה שכתבתי</button>
+  <div class="row" style="gap:10px;color:var(--muted)"><span style="flex:1;height:1px;background:var(--line)"></span><span class="small">או</span><span style="flex:1;height:1px;background:var(--line)"></span></div>
+  <label class="btn block ghost" for="foodIn" style="cursor:pointer">צלם או העלה תמונה</label><input type="file" id="foodIn" accept="image/*" class="hidden">
+  <p class="small muted">אפשר גם לשלב: לכתוב פרטים (כמה, איך הוכן) ואז לצלם.</p>
   <div id="foodOut"><p class="small muted">הערכה בלבד. מתאים למעקב כללי אחרי מסה או חיטוב.</p></div>`)}
-async function scanFood(f){const out=$('#foodOut');const t=await thumb(f);out.innerHTML=`${t?`<img src="${t}" style="border-radius:10px;width:120px" alt="">`:''}<p class="muted">מעריך…</p>`;let r;
-  if(AI&&IMG){try{r=await AI.json(`בתמונה ארוחה. זהה את המרכיבים והערך כמויות. מתאמן ב: ${S.sports.map(k=>SPORTS[k].name).join(', ')}. החזר רק JSON בעברית: {"items":[{"name":"","amount":"","kcal":0,"protein":0}],"kcal":0,"protein":0,"note":"משפט אחד מעשי"}`,{images:[f],modelTier:'default'})}catch(e){out.innerHTML=`<div class="banner bad">${esc(aiFail(e))}</div>`;return}}
-  else{await wait(900);r={items:[{name:'חזה עוף',amount:'150 גר׳',kcal:250,protein:46},{name:'אורז',amount:'כוס',kcal:240,protein:5},{name:'סלט',amount:'קערה',kcal:60,protein:2}],kcal:550,protein:53,note:'ארוחה טובה אחרי אימון. מצב הדגמה: התוצאה לא מבוססת על התמונה.',demo:true}}
+async function scanFood(f){const out=$('#foodOut');const desc=($('#foodText')?.value||'').trim();if(!f&&!desc){toast('כתוב מה אכלת או צלם את הצלחת');return}const t=f?await thumb(f):null;out.innerHTML=`${t?`<img src="${t}" style="border-radius:10px;width:120px" alt="">`:''}<p class="muted">מעריך…</p>`;let r;
+  if(AI&&(IMG||!f)){try{r=await AI.json(`${f?'בתמונה ארוחה.':'המתאמן תיאר במילים מה אכל.'}${desc?' התיאור שלו: "'+desc+'".':''} זהה את המרכיבים והערך כמויות${f&&desc?' (התיאור עוזר לדייק כמויות ומה לא רואים בתמונה)':''}. מתאמן ב: ${S.sports.map(k=>SPORTS[k].name).join(', ')}. החזר רק JSON בעברית: {"items":[{"name":"","amount":"","kcal":0,"protein":0}],"kcal":0,"protein":0,"note":"משפט אחד מעשי"}`,{...(f?{images:[f]}:{}),modelTier:'default'})}catch(e){out.innerHTML=`<div class="banner bad">${esc(aiFail(e))}</div>`;return}}
+  else{await wait(900);r={items:[{name:'חזה עוף',amount:'150 גר׳',kcal:250,protein:46},{name:'אורז',amount:'כוס',kcal:240,protein:5},{name:'סלט',amount:'קערה',kcal:60,protein:2}],kcal:550,protein:53,note:'ארוחה טובה אחרי אימון. מצב הדגמה: התוצאה לא מבוססת על מה ששלחת.',demo:true}}
   const meal={name:(r.items||[]).map(x=>x.name).slice(0,3).join(', ')||'ארוחה',kcal:Math.round(Number(r.kcal)||0),protein:Math.round(Number(r.protein)||0),thumb:t,time:new Date().toTimeString().slice(0,5)};
   (S.meals[today()]||(S.meals[today()]=[])).push(meal);save();render();
   out.innerHTML=`<div class="banner">נוסף ליומן של היום ✓</div>${t?`<img src="${t}" style="border-radius:10px;width:120px" alt="">`:''}<div class="card"><div class="row between"><span class="disp" style="font-size:44px">${Math.round(r.kcal)} <span style="font-size:22px">קק״ל</span></span><span class="num">${Math.round(r.protein)} גר׳ חלבון</span></div>
@@ -759,6 +789,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   case'energy':S.energy[today()]=t.dataset.k;save();render();break;
   case'report':openReport();break;case'sendreport':sendReport();break;
   case'food':openFood();break;
+  case'foodtext':scanFood(null);break;
   case'replan':buildAIPlan();break;
   case'steps':{const n=parseInt(($('#stepsIn').value||'').replace(/[^0-9]/g,''));if(!n){toast('הקלד מספר צעדים');break}S.steps[today()]=n;save();render();toast('הצעדים עודכנו');break}
   case'delmeal':{const M=S.meals[today()]||[];M.splice(+t.dataset.i,1);save();render();break}
@@ -771,7 +802,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   case'spot':{IJ.region=t.dataset.k;IJ.side=sideOf(IJ.view,+t.dataset.x,IJ.region);renderInj();break}
   case'injnext':IJ.step=1;renderInj();break;case'injback':IJ.step=0;renderInj();break;
   case'ij':{const k=t.dataset.key,v=t.dataset.v;if(t.dataset.m==='1')IJ[k]=IJ[k].includes(v)?IJ[k].filter(x=>x!==v):[...IJ[k],v];else IJ[k]=v;renderInj();break}
-  case'injgo':runInj();break;case'injsave':saveInj();break;
+  case'injgo':{IJ.other=($('#injOther')?.value||IJ.other||'').trim();if(!IJ.move.length&&!(IJ.sym||[]).length&&!IJ.other){toast('בחר מה אתה מרגיש, או ספר במילים שלך מה קרה');break}runInj();break}case'injsave':saveInj();break;
   case'injagain':{const i=S.injuries.find(x=>x.id==t.dataset.id);if(i)openInjury(i.region,i);break}
   case'injbetter':{const i=S.injuries.find(x=>x.id==t.dataset.id);if(i){i.active=false;save();render();toast('מעולה! המאמן יחזיר את התרגילים בהדרגה')}break}
   case'reset':if(t.dataset.confirm){const keep={uid:S.uid,email:S.email,name:S.name};try{localStorage.removeItem(KEY)}catch(_){}S=Object.assign(fresh(),keep,USER?{stage:'onb',t0:Date.now()}:{});save();render()}else{t.dataset.confirm=1;t.textContent='בטוח? לחץ שוב';setTimeout(()=>{if(t.isConnected){delete t.dataset.confirm;t.textContent='איפוס'}},3000)}break;
@@ -792,7 +823,7 @@ async function readSteps(f){if(!(AI&&IMG)){toast('קריאת צילום מסך �
   try{const r=await AI.json('זהו צילום מסך מאפליקציית בריאות או כושר. מצא את מספר הצעדים של היום. החזר רק JSON: {"steps":1234} או {"steps":null} אם אין מספר צעדים בתמונה.',{images:[f],modelTier:'quick'});
    const n=parseInt(r?.steps);if(!n){toast('לא מצאתי מספר צעדים בתמונה');return}S.steps[today()]=n;save();render();toast(`עודכן: ${n.toLocaleString('he-IL')} צעדים`)}
   catch(e){toast(aiFail(e))}}
-document.addEventListener('input',e=>{if(e.target.id==='painR'){IJ.pain=+e.target.value;$('#painV').textContent=IJ.pain}});
+document.addEventListener('input',e=>{if(e.target.id==='painR'){IJ.pain=+e.target.value;$('#painV').textContent=IJ.pain}if(e.target.id==='injOther'&&IJ)IJ.other=e.target.value});
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList?.contains('spot')){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}))}});
 document.querySelectorAll('.nav [data-tab]').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;save();render();scrollTo(0,0)});
 $('#painBtn').onclick=()=>openInjury(null);
