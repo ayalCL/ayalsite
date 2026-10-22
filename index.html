@@ -381,7 +381,8 @@ function loginView(){
   <p class="muted" style="max-width:34ch">לא צריך להיות מושלם, צריך להיות עקבי. מתחילים בפחות מדקה.</p></div>`;
   if(S.pendingEmail&&SB)return hero+`<div class="stack">
    <div class="card"><div class="eyebrow">בדוק את המייל</div><div class="t">שלחנו קישור כניסה ל-<span dir="ltr">${esc(S.pendingEmail)}</span></div>
-   <p class="small muted">פתח את המייל ולחץ על הקישור. אם נכנסת מהאייקון במסך הבית, עדיף להקליד כאן את הקוד מהמייל.</p></div>
+   <p class="small muted">פתח את המייל ולחץ על הקישור. אם נכנסת מהאייקון במסך הבית, עדיף להקליד כאן את הקוד מהמייל.</p>
+   <p class="small" style="color:var(--warn)">לא מוצא את המייל? בדוק בתיקיית <b>ספאם</b>, וסמן "לא ספאם" כדי שהמיילים הבאים יגיעו לתיבה הרגילה.</p></div>
    <input type="text" id="codeIn" inputmode="numeric" autocomplete="one-time-code" dir="ltr" placeholder="קוד מהמייל" maxlength="10">
    <div id="loginErr" class="small" style="color:var(--bad)" role="alert"></div>
    <button class="btn block" type="button" data-act="verifycode">כניסה עם הקוד</button>
