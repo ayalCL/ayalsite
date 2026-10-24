@@ -335,9 +335,16 @@ async function sendLink(){const em=($('#emailIn')?.value||S.pendingEmail||'').tr
   const nm=$('#nameIn');if(nm)S.name=nm.value.trim();
   if(!SB){S.email=em;S.stage='onb';S.onbStep=0;S.t0=Date.now();save();render();return}
   const b=$('[data-act=sendlink]');if(b){b.disabled=true;b.textContent='שולח…'}
-  const {error}=await SB.auth.signInWithOtp({email:em,options:{emailRedirectTo:location.origin+location.pathname}});
-  if(b){b.disabled=false;b.textContent='שלח לי קישור כניסה'}
-  if(error){err.textContent=/rate|seconds/i.test(error.message)?'שלחנו כבר קישור לפני רגע. חכה דקה ונסה שוב.':'השליחה נכשלה: '+error.message;return}
+  let error=null;
+  try{({error}=await withTimeout(SB.auth.signInWithOtp({email:em,options:{emailRedirectTo:location.origin+location.pathname}}),20000))}
+  catch(e){error={message:e?.message==='timeout'?'timeout':String(e?.message||e)}}
+  if(b){b.disabled=false;b.textContent=S.pendingEmail?'שלח שוב':'שלח לי קישור כניסה'}
+  if(error){const m=error.message||'';
+    const msg=/rate|seconds/i.test(m)?'שלחנו כבר מייל לפני רגע. חכה דקה ונסה שוב.'
+      :/timeout|fetch|network|load failed/i.test(m)?'אין חיבור לשרת. בדוק שיש אינטרנט (או נסה בלי Wi-Fi של בית ספר/עבודה) ונסה שוב.'
+      :'השליחה נכשלה: '+m;
+    if(err)err.textContent=msg;toast(msg);return}
+  toast('נשלח! בדוק את המייל, גם בספאם');
   try{localStorage.setItem('plc-last-email',em)}catch(e){}S.pendingEmail=em;save();render();setTimeout(()=>$('#codeIn')?.focus(),50)}
 async function verifyCode(){const code=($('#codeIn')?.value||'').replace(/\D/g,'');const err=$('#loginErr');
   if(code.length<6){err.textContent='הקלד את כל הספרות של הקוד מהמייל';return}
