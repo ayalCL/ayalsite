@@ -1,7 +1,7 @@
 // Offline support for the home-screen app.
 // The page itself is fetched network-first, so a new version shows up on the next open;
 // the cached copy is only used when there is no connection.
-const CACHE_NAME = 'life-coach-v2';
+const CACHE_NAME = 'life-coach-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -29,7 +29,18 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  // Only handle this site's own files. Supabase, AI and fonts always go to the network.
+  // The sign-in library is a pinned version that never changes: keep it on the phone.
+  if (url.hostname === 'cdn.jsdelivr.net' && url.pathname.includes('@supabase/supabase-js@')) {
+    event.respondWith(
+      caches.match(req).then((cached) => cached || fetch(req).then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE_NAME).then((c) => c.put(req, copy));
+        return res;
+      }))
+    );
+    return;
+  }
+  // Everything else from other sites (Supabase, AI, fonts) always goes to the network.
   if (url.origin !== self.location.origin) return;
 
   if (req.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('/')) {

@@ -15,7 +15,9 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=Karantina:wght@400;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://xgltmkgayorkhvxwvhem.supabase.co" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=Karantina:wght@400;700&family=IBM+Plex+Mono:wght@500&display=swap" media="print" onload="this.media='all'">
 <style>
 /* Layout: one phone-width app column, scoreboard-condensed numerals, court-orange as the single loud colour */
 :root{
@@ -282,8 +284,9 @@ function save(){S.updated=Date.now();try{localStorage.setItem(KEY,JSON.stringify
 const SUPABASE_URL="https://xgltmkgayorkhvxwvhem.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_52XAO-p1ldQOmwO8daQ_Yw_nG90J31T";
 let SB=null;try{if(window.supabase)SB=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY)}catch(e){SB=null}
-let BOOT=!!SB,USER=null,remoteT=null,pushing=false,again=false,SYNC='local',lastSent='';
-setTimeout(()=>{if(BOOT){BOOT=false;render()}},8000);
+const HAS_TOKEN=(()=>{try{return !!localStorage.getItem('sb-xgltmkgayorkhvxwvhem-auth-token')}catch(e){return false}})();
+let BOOT=!!SB&&HAS_TOKEN&&S.stage==='login',USER=null,remoteT=null,pushing=false,again=false,SYNC='local',lastSent='',REMOTE_READY=false;
+setTimeout(()=>{if(BOOT){BOOT=false;render()}},4000);
 const CAP=900000;
 function packForCloud(){const r=JSON.parse(JSON.stringify(S));
   r.chat=(r.chat||[]).slice(-150).map((m,i,a)=>i<a.length-8&&m.thumbs?{...m,thumbs:null}:m);
@@ -291,7 +294,7 @@ function packForCloud(){const r=JSON.parse(JSON.stringify(S));
   if(JSON.stringify(r).length>CAP)Object.values(r.hist||{}).flat().forEach(e=>e.thumbs=null);
   if(JSON.stringify(r).length>CAP)r.chat.forEach(m=>m.thumbs=null);
   return r}
-async function pushRemote(){if(!SB||!USER)return;if(pushing){again=true;return}pushing=true;
+async function pushRemote(){if(!SB||!USER||!REMOTE_READY)return;if(pushing){again=true;return}pushing=true;
   try{const st=packForCloud();const j=JSON.stringify(st);
     if(j!==lastSent){const {error}=await SB.from('app_state').upsert({user_id:USER.id,state:st,updated_at:new Date().toISOString()});if(error)throw error;lastSent=j}
     setSync('cloud')}
@@ -300,20 +303,25 @@ async function pushRemote(){if(!SB||!USER)return;if(pushing){again=true;return}p
 function setSync(v){SYNC=v;document.querySelectorAll('.sync').forEach(el=>{el.textContent=syncText();el.dataset.s=v})}
 function syncText(){return SYNC==='cloud'?'✓ נשמר בחשבון':SYNC==='error'?'לא נשמר, ננסה שוב':'נשמר רק במכשיר הזה'}
 function rebuildCustom(){(S.custom||[]).forEach(x=>{SPORTS[x.k]=makeCustom(x.name)});(S.customAreas||[]).forEach(x=>{AREAS[x.k]=makeArea(x.name)})}
+function withTimeout(pr,ms){return Promise.race([pr,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))])}
 async function onSignedIn(session){
   if(USER&&USER.id===session.user.id)return;USER=session.user;
   if(S.uid&&S.uid!==USER.id){S=fresh()}
-  try{const {data,error}=await SB.from('app_state').select('state').eq('user_id',USER.id).maybeSingle();if(error)throw error;
-    const r=data?.state;
-    if(r&&r.stage==='app'&&(S.stage!=='app'||!S.updated||(r.updated||0)>=S.updated)){
-      S=Object.assign(fresh(),r);rebuildCustom();dropDemo();lastSent=JSON.stringify(r);S.tab='home';
-      try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
-      toast(`ברוך שובך${S.name?', '+S.name:''}!`)}
-    SYNC='cloud'}catch(e){console.warn('load failed',e);SYNC='error'}
   S.uid=USER.id;S.email=USER.email||S.email;S.pendingEmail='';
   if(S.stage==='login'){S.stage='onb';S.onbStep=0;S.t0=Date.now()}
-  setAI();save();BOOT=false;render();
-  if(S.stage==='app'&&!(S.aiPlan?.date===today())&&!(S.reports.at(-1)?.tomorrow?.length&&S.reports.at(-1).date!==today()))buildAIPlan()}
+  setAI();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  if(!BOOT)render();   // show the app (or the language question) right away; the account loads in the background
+  loadRemote()}
+async function loadRemote(){if(!USER)return;
+  try{const {data,error}=await withTimeout(SB.from('app_state').select('state').eq('user_id',USER.id).maybeSingle(),10000);if(error)throw error;
+    const r=data?.state;
+    const takeRemote=r&&r.stage==='app'&&(S.stage!=='app'?S.onbStep<=1:(!S.updated||(r.updated||0)>=S.updated));
+    if(takeRemote){const keep={uid:USER.id,email:USER.email};S=Object.assign(fresh(),r,keep);rebuildCustom();dropDemo();lastSent=JSON.stringify(r);S.tab='home';
+      try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+      toast(`ברוך שובך${S.name?', '+S.name:''}!`)}
+    REMOTE_READY=true;SYNC='cloud';BOOT=false;render();save();
+    if(S.stage==='app'&&!(S.aiPlan?.date===today())&&!(S.reports.at(-1)?.tomorrow?.length&&S.reports.at(-1).date!==today()))buildAIPlan()}
+  catch(e){console.warn('load failed, retrying',e);setSync('error');if(BOOT){BOOT=false;render()}setTimeout(loadRemote,8000)}}
 (async()=>{if(!SB)return;
   SB.auth.onAuthStateChange((ev,session)=>{if(session?.user&&(ev==='SIGNED_IN'||ev==='INITIAL_SESSION'))setTimeout(()=>onSignedIn(session),0)});
   try{const {data:{session}}=await SB.auth.getSession();if(session?.user)await onSignedIn(session);else{BOOT=false;render()}}
@@ -334,7 +342,7 @@ async function verifyCode(){const code=($('#codeIn')?.value||'').replace(/\D/g,'
   const {data,error}=await SB.auth.verifyOtp({email:S.pendingEmail,token:code,type:'email'});
   if(error){err.textContent='הקוד לא נכון או שפג תוקפו. אפשר לשלוח קישור חדש.';return}
   if(data?.session)onSignedIn(data.session)}
-async function signOut(){try{await SB?.auth.signOut()}catch(e){}USER=null;S=fresh();lastSent='';try{localStorage.removeItem(KEY)}catch(e){}setAI();SYNC='local';render()}
+async function signOut(){try{await SB?.auth.signOut()}catch(e){}USER=null;REMOTE_READY=false;S=fresh();lastSent='';try{localStorage.removeItem(KEY)}catch(e){}setAI();SYNC='local';render()}
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.append(d);setTimeout(()=>d.remove(),3200)}
 
 /* ---------- AI: the ask-coach Edge Function (the API key stays on the server) ---------- */
