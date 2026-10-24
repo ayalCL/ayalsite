@@ -382,12 +382,42 @@ const LANGLINE=()=>S.lang==='en'?'Always answer in English.':'ענה תמיד ב
 function activeInj(){return S.injuries.filter(i=>i.active)}
 
 /* ---------- render root ---------- */
+/* ---------- install as an app (phones only) ---------- */
+const UA=navigator.userAgent||'';
+const IS_IOS=/iPhone|iPad|iPod/.test(UA)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const IS_ANDROID=/Android/.test(UA);
+const IN_APP=/FBAN|FBAV|Instagram|Line\/|WhatsApp|Telegram|TikTok|Snapchat|GSA\//.test(UA);
+const IOS_NOT_SAFARI=IS_IOS&&/CriOS|FxiOS|EdgiOS|OPiOS/.test(UA);
+let installEvt=null,INSTALLED=false;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;render()});
+addEventListener('appinstalled',()=>{INSTALLED=true;installEvt=null;render()});
+function needInstall(){return (IS_IOS||IS_ANDROID)&&!standalone()&&!/[?&]browser=1/.test(location.search)}
+const SHARE_ICON='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-5px"><path d="M12 3v12M8 7l4-4 4 4"/><rect x="5" y="10" width="14" height="11" rx="2"/></svg>';
+const ADD_ICON='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-5px"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg>';
+function installView(){
+  const head=`<div class="hero" style="padding-bottom:8px"><div class="eyebrow">PERSONAL LIFE COACH</div><h1 class="disp" style="margin-top:10px">קודם,<br><span>מתקינים.</span></h1>
+   <p class="muted" style="max-width:34ch">האפליקציה עובדת מהאייקון במסך הבית, כמו כל אפליקציה. זה לוקח 10 שניות.</p></div>`;
+  if(INSTALLED)return head+`<div class="card"><div class="t">מותקן! ✓</div><p>פתח את <b>Life Coach</b> מהאייקון במסך הבית והמשך משם.</p></div>`;
+  if(IN_APP||IOS_NOT_SAFARI)return head+`<div class="card"><div class="t">פתח את הקישור ב${IS_IOS?'-Safari':'כרום'}</div>
+   <p class="small">מהדפדפן הזה אי אפשר להתקין. לחץ על ⋯ או על סמל הדפדפן, ובחר "פתח ב${IS_IOS?'-Safari':'כרום'}". או העתק את הכתובת:</p>
+   <input type="text" id="instUrl" readonly dir="ltr" value="${esc(location.origin+location.pathname)}" onclick="this.select()"></div>`;
+  if(IS_ANDROID)return head+(installEvt
+   ?`<button class="btn block" data-act="install" style="font-size:18px;padding:16px">התקן את האפליקציה</button><p class="small muted">אחרי ההתקנה, פתח מהאייקון במסך הבית.</p>`
+   :`<div class="card"><div class="t">3 צעדים</div><ol style="margin:0;padding-right:20px;display:flex;flex-direction:column;gap:8px">
+     <li>לחץ על <b>⋮</b> למעלה בכרום</li><li>בחר <b>"התקן אפליקציה"</b> או <b>"הוסף למסך הבית"</b></li><li>פתח את <b>Life Coach</b> מהאייקון</li></ol></div>`);
+  return head+`<div class="card"><div class="t">3 צעדים באייפון</div><ol style="margin:0;padding-right:20px;display:flex;flex-direction:column;gap:10px;font-size:16px">
+   <li>לחץ על כפתור השיתוף ${SHARE_ICON} בתחתית המסך</li>
+   <li>גלול ובחר <b>"הוסף למסך הבית"</b> ${ADD_ICON}</li>
+   <li>לחץ <b>"הוסף"</b>, ופתח את <b>Life Coach</b> מהאייקון</li></ol></div>
+   <div class="banner">בכניסה הראשונה מהאייקון, התחבר עם <b>הקוד</b> שמגיע במייל.</div>
+   <div style="text-align:center;font-size:30px;color:var(--accent);margin-top:4px" aria-hidden="true">↓</div>`}
 function render(){
   const app=$('#app');
   $('#nav').classList.toggle('hidden',S.stage!=='app');
   $('#composer').classList.toggle('hidden',!(S.stage==='app'&&S.tab==='coach'));
   document.querySelectorAll('.nav [data-tab]').forEach(b=>b.setAttribute('aria-current',b.dataset.tab===S.tab?'page':'false'));
   clock();
+  if(needInstall()){$('#nav').classList.add('hidden');$('#composer').classList.add('hidden');app.innerHTML=installView();return}
   if(BOOT&&S.stage!=='app'){app.innerHTML=`<div class="hero" style="text-align:center"><div class="brand" style="font-size:30px">Personal <b>Life</b> Coach</div><p class="muted" style="margin-top:18px">טוען את החשבון שלך…</p></div>`;return}
   if(S.stage==='login')app.innerHTML=loginView();
   else if(S.stage==='onb')app.innerHTML=onbView();
@@ -828,6 +858,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   case'report':openReport();break;case'sendreport':sendReport();break;
   case'food':openFood();break;
   case'foodtext':scanFood(null);break;
+  case'install':if(installEvt){installEvt.prompt();installEvt.userChoice.then(c=>{if(c.outcome==='accepted'){INSTALLED=true}installEvt=null;render()})}break;
   case'msave':{const k=t.dataset.k;const el=$('#mIn_'+k);const raw=(el?.value||'').trim();
     const m=(SPORTS[k]||AREAS[k])?.metric||{};const v=m.grade?raw.toUpperCase().replace(/\s+/g,''):raw.replace(',','.');
     if(!v||(m.grade?isNaN(gradeNum(v)):isNaN(Number(v)))){toast(m.grade?'כתוב דרגה, למשל V3':'כתוב מספר');break}
