@@ -340,7 +340,7 @@ async function sendLink(){const em=($('#emailIn')?.value||S.pendingEmail||'').tr
   if(error){err.textContent=/rate|seconds/i.test(error.message)?'שלחנו כבר קישור לפני רגע. חכה דקה ונסה שוב.':'השליחה נכשלה: '+error.message;return}
   try{localStorage.setItem('plc-last-email',em)}catch(e){}S.pendingEmail=em;save();render();setTimeout(()=>$('#codeIn')?.focus(),50)}
 async function verifyCode(){const code=($('#codeIn')?.value||'').replace(/\D/g,'');const err=$('#loginErr');
-  if(code.length<6){err.textContent='הקוד מהמייל הוא 6 ספרות או יותר';return}
+  if(code.length<6){err.textContent='הקלד את כל הספרות של הקוד מהמייל';return}
   const {data,error}=await SB.auth.verifyOtp({email:S.pendingEmail,token:code,type:'email'});
   if(error){err.textContent='הקוד לא נכון או שפג תוקפו. אפשר לשלוח קישור חדש.';return}
   if(data?.session)onSignedIn(data.session)}
@@ -438,7 +438,7 @@ function loginView(){
    <div class="card"><div class="eyebrow">בדוק את המייל</div><div class="t">שלחנו מייל ל-<span dir="ltr">${esc(S.pendingEmail)}</span></div>
    <p class="small">${standalone()?'<b>הקלד כאן את הקוד מהמייל.</b> אל תלחץ על הקישור: הוא נפתח בדפדפן ולא באפליקציה.':'הקלד כאן את הקוד מהמייל, או לחץ על הקישור שבמייל.'}</p>
    <p class="small" style="color:var(--warn)">לא מוצא את המייל? בדוק בתיקיית <b>ספאם</b>, וסמן "לא ספאם" כדי שהמיילים הבאים יגיעו לתיבה הרגילה.</p></div>
-   <input type="text" id="codeIn" inputmode="numeric" autocomplete="one-time-code" dir="ltr" placeholder="קוד מהמייל (6 ספרות)" maxlength="10" style="font-size:22px;letter-spacing:4px;text-align:center">
+   <input type="text" id="codeIn" inputmode="numeric" autocomplete="one-time-code" dir="ltr" placeholder="הקוד מהמייל" maxlength="12" style="font-size:22px;letter-spacing:4px;text-align:center">
    <div id="loginErr" class="small" style="color:var(--bad)" role="alert"></div>
    <button class="btn block" type="button" data-act="verifycode">כניסה עם הקוד</button>
    <div class="row between"><button class="skip" type="button" data-act="sendlink">שלח שוב</button><button class="skip" type="button" data-act="changeemail">אימייל אחר</button></div></div>`;
