@@ -761,16 +761,17 @@ async function sendReport(){const g=k=>$('#r_'+k).value.trim();const rep={date:t
 
 /* food */
 function openFood(){sheet(`${head('סריקת אוכל','מה אכלת?')}
-  <textarea id="foodText" rows="3" placeholder="כתוב מה אכלת, למשל: 2 פרוסות לחם מלא עם חומוס, ביצה וסלט"></textarea>
-  <button class="btn block" type="button" data-act="foodtext">חשב לפי מה שכתבתי</button>
-  <div class="row" style="gap:10px;color:var(--muted)"><span style="flex:1;height:1px;background:var(--line)"></span><span class="small">או</span><span style="flex:1;height:1px;background:var(--line)"></span></div>
-  <label class="btn block ghost" for="foodIn" style="cursor:pointer">צלם או העלה תמונה</label><input type="file" id="foodIn" accept="image/*" class="hidden">
-  <p class="small muted">אפשר גם לשלב: לכתוב פרטים (כמה, איך הוכן) ואז לצלם.</p>
+  <div class="stack" style="gap:6px"><span class="t">1. מה זה?</span>
+  <input type="text" id="foodText" placeholder="למשל: שניצל עם פירה, 2 פרוסות לחם עם חומוס"></div>
+  <div class="stack" style="gap:6px"><span class="t">2. צלם את הצלחת</span>
+  <label class="btn block" for="foodIn" style="cursor:pointer">צלם וחשב קלוריות</label><input type="file" id="foodIn" accept="image/*" class="hidden">
+  <p class="small muted">החישוב לפי מה שכתבת. התמונה עוזרת להעריך כמה יש בצלחת.</p></div>
+  <button class="btn block ghost" type="button" data-act="foodtext">אין תמונה? חשב רק לפי מה שכתבתי</button>
   <div id="foodOut"><p class="small muted">הערכה בלבד. מתאים למעקב כללי אחרי מסה או חיטוב.</p></div>`)}
 async function scanFood(f){const out=$('#foodOut');const desc=($('#foodText')?.value||'').trim();if(!f&&!desc){toast('כתוב מה אכלת או צלם את הצלחת');return}const t=f?await thumb(f):null;out.innerHTML=`${t?`<img src="${t}" style="border-radius:10px;width:120px" alt="">`:''}<p class="muted">מעריך…</p>`;let r;
-  if(AI&&(IMG||!f)){try{r=await AI.json(`${f?'בתמונה ארוחה.':'המתאמן תיאר במילים מה אכל.'}${desc?' התיאור שלו: "'+desc+'".':''} זהה את המרכיבים והערך כמויות${f&&desc?' (התיאור עוזר לדייק כמויות ומה לא רואים בתמונה)':''}. מתאמן ב: ${S.sports.map(k=>SPORTS[k].name).join(', ')}. החזר רק JSON בעברית: {"items":[{"name":"","amount":"","kcal":0,"protein":0}],"kcal":0,"protein":0,"note":"משפט אחד מעשי"}`,{...(f?{images:[f]}:{}),modelTier:'default'})}catch(e){out.innerHTML=`<div class="banner bad">${esc(aiFail(e))}</div>`;return}}
+  if(AI&&(IMG||!f)){try{r=await AI.json(`${desc?`המתאמן כתב שהוא אכל: "${desc}". זה הקובע: חשב קלוריות וחלבון לפי מה שהוא כתב, ואל תחליף את המאכלים במשהו אחר.${f?' התמונה המצורפת היא אותה ארוחה. השתמש בה רק כדי להעריך את הכמויות (גודל מנה, כמה יחידות). אם הוא כתב כמות, הכמות שלו קובעת.':' הערך כמות של מנה רגילה, אלא אם כתב כמות.'}`:'בתמונה ארוחה. זהה את המרכיבים והערך כמויות.'} מתאמן ב: ${S.sports.map(k=>SPORTS[k].name).join(', ')}. החזר רק JSON בעברית: {"items":[{"name":"","amount":"","kcal":0,"protein":0}],"kcal":0,"protein":0,"note":"משפט אחד מעשי"}`,{...(f?{images:[f]}:{}),modelTier:'default'})}catch(e){out.innerHTML=`<div class="banner bad">${esc(aiFail(e))}</div>`;return}}
   else{await wait(900);r={items:[{name:'חזה עוף',amount:'150 גר׳',kcal:250,protein:46},{name:'אורז',amount:'כוס',kcal:240,protein:5},{name:'סלט',amount:'קערה',kcal:60,protein:2}],kcal:550,protein:53,note:'ארוחה טובה אחרי אימון. מצב הדגמה: התוצאה לא מבוססת על מה ששלחת.',demo:true}}
-  const meal={name:(r.items||[]).map(x=>x.name).slice(0,3).join(', ')||'ארוחה',kcal:Math.round(Number(r.kcal)||0),protein:Math.round(Number(r.protein)||0),thumb:t,time:new Date().toTimeString().slice(0,5)};
+  const meal={name:desc||(r.items||[]).map(x=>x.name).slice(0,3).join(', ')||'ארוחה',kcal:Math.round(Number(r.kcal)||0),protein:Math.round(Number(r.protein)||0),thumb:t,time:new Date().toTimeString().slice(0,5)};
   (S.meals[today()]||(S.meals[today()]=[])).push(meal);save();render();
   out.innerHTML=`<div class="banner">נוסף ליומן של היום ✓</div>${t?`<img src="${t}" style="border-radius:10px;width:120px" alt="">`:''}<div class="card"><div class="row between"><span class="disp" style="font-size:44px">${Math.round(r.kcal)} <span style="font-size:22px">קק״ל</span></span><span class="num">${Math.round(r.protein)} גר׳ חלבון</span></div>
    ${(r.items||[]).map(x=>`<div class="hist"><div><div class="t">${esc(x.name)}</div><div class="small muted">${esc(x.amount)}</div></div><span class="num small">${Math.round(x.kcal)}</span></div>`).join('')}<div class="small muted">${esc(r.note)}</div></div>`}
