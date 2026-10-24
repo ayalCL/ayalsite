@@ -189,16 +189,16 @@ const KEY='plc-proto-v1';
 const SPORTS={
   basketball:{name:'כדורסל',sub:'זריקה, כדרור, כושר',
     plan:[['חימום דינמי','10 דק׳: ריצה קלה, פתיחת ירכיים, קפיצות'],['100 זריקות מ-5 נקודות','רשום כמה נכנסו מכל נקודה'],['כדרור שתי ידיים','15 דק׳: קרוסאובר, בין הרגליים, מאחורי הגב'],['קפיצות פליומטריות','3×8 קפיצות קופסה']],
-    ex:['זריקה לסל','כדרור','לייאפ'],metric:{label:'אחוזי קליעה',unit:'%',vals:[38,41,40,44,47]}},
+    ex:['זריקה לסל','כדרור','לייאפ'],metric:{label:'אחוזי קליעה',unit:'%',q:'מכמה זריקות לסל נכנסות לך בערך? (באחוזים)',ph:'למשל 40',vals:[38,41,40,44,47]}},
   climbing:{name:'טיפוס',sub:'טכניקה, אצבעות, גמישות',
     plan:[['חימום אצבעות','10 דק׳ על אחיזות גדולות, הדרגתי'],['6 בולדרים ברמה נוחה','פוקוס: רגליים שקטות, בלי רעש על הקיר'],['3 ניסיונות על הפרויקט','מנוחה של 3 דק׳ בין ניסיונות'],['מתיחות ירכיים','פרוג ו-90/90, 8 דק׳']],
-    ex:['מעבר בבולדר','עבודת רגליים','תלייה על האנגבורד'],metric:{label:'דרגה מקסימלית',unit:'',vals:['V2','V3','V3','V4','V4'],num:[2,3,3,4,4]}},
+    ex:['מעבר בבולדר','עבודת רגליים','תלייה על האנגבורד'],metric:{label:'דרגה מקסימלית',unit:'',grade:true,q:'מה הדרגה הכי גבוהה שסגרת?',ph:'למשל V3',vals:['V2','V3','V3','V4','V4'],num:[2,3,3,4,4]}},
   gym:{name:'חדר כושר',sub:'כוח, מסה, התקדמות',
     plan:[['סקוואט','4×6, מנוחה 2:30 דק׳'],['לחיצת חזה','4×8'],['חתירה בכבל','3×10'],['פלאנק','3×45 שנ׳']],
-    ex:['סקוואט','דדליפט','בנץ׳ פרס'],metric:{label:'סקוואט (משקל עבודה)',unit:' ק״ג',vals:[60,65,65,70,75]}},
+    ex:['סקוואט','דדליפט','בנץ׳ פרס'],metric:{label:'סקוואט (משקל עבודה)',unit:' ק״ג',q:'עם כמה ק״ג אתה עושה סקוואט ל-5 חזרות?',ph:'למשל 60',vals:[60,65,65,70,75]}},
   calisthenics:{name:'קליסטניקס',sub:'מתח, שליטה, סקילים',
     plan:[['מתח','5 סטים, 2 חזרות לפני כשל'],['שכיבות סמיכה','4×12, ירידה של 3 שנ׳'],['הנדסטנד מול קיר','5×30 שנ׳, גוף ישר'],['הולו הולד','3×30 שנ׳']],
-    ex:['מתח','שכיבות סמיכה','הנדסטנד'],metric:{label:'מתח (חזרות ברצף)',unit:'',vals:[4,5,6,8,9]}}
+    ex:['מתח','שכיבות סמיכה','הנדסטנד'],metric:{label:'מתח (חזרות ברצף)',unit:'',q:'כמה מתח אתה עושה ברצף?',ph:'למשל 6',vals:[4,5,6,8,9]}}
 };
 const TIPS={'זריקה לסל':'צלם מהצד, שכל הגוף והסל ייכנסו בפריים','כדרור':'צלם מלפנים, בגובה המותניים','לייאפ':'צלם מהצד, מ-3 צעדים לפני הסל','מעבר בבולדר':'צלם מאחור, שכל הבולדר ייכנס','עבודת רגליים':'צלם מקרוב על הרגליים והאחיזות','תלייה על האנגבורד':'צלם מהצד, שהכתפיים והמרפקים יראו','סקוואט':'צלם מהצד, בגובה הברכיים, כל הגוף בפריים','דדליפט':'צלם מהצד, שהמוט והגב יראו','בנץ׳ פרס':'צלם מהצד או מעל הראש באלכסון','מתח':'צלם מהצד, מהרגליים עד הידיים על המוט','שכיבות סמיכה':'צלם מהצד, בגובה הרצפה','הנדסטנד':'צלם מהצד, כל הגוף בפריים'};
 const REG={
@@ -235,11 +235,11 @@ const today=()=>new Date().toISOString().slice(0,10);
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 function fresh(){return{stage:'login',name:'',sports:[],first:'',checkin:'19:00',t0:null,onbSecs:null,onbStep:0,chat:[],hist:{},injuries:[],reports:[],energy:{},done:{},tab:'home',psport:null,ex:null,
   email:'',lang:'he',custom:[],goalChips:[],goals:'',level:'',days:3,minutes:60,when:'',quit:[],past:'',
-  steps:{},stepGoal:8000,meals:{},kcalGoal:2400,areas:[],customAreas:[],focus:'',bed:'23:30',wake:'07:00',screenNow:5,screenGoal:3,studyWhat:'',newLang:'',langLevel:''}}
+  metrics:{},steps:{},stepGoal:8000,meals:{},kcalGoal:2400,areas:[],customAreas:[],focus:'',bed:'23:30',wake:'07:00',screenNow:5,screenGoal:3,studyWhat:'',newLang:'',langLevel:''}}
 let S;try{S=Object.assign(fresh(),JSON.parse(localStorage.getItem(KEY))||{})}catch(e){S=fresh()}
 function makeCustom(name){return{name,sub:'התחום שלך',custom:true,
   plan:[['חימום','10 דק׳: הדרגתי, לפי התחום'],[`תרגול טכניקה: ${name}`,'20 דק׳ ממוקדות בדבר אחד שאתה רוצה לשפר'],['עבודה בעצימות','15-20 דק׳ לפי היכולת שלך'],['שחרור ומתיחות','8 דק׳']],
-  ex:['טכניקה כללית','תנועה מרכזית'],metric:{label:'דקות אימון בשבוע',unit:'',vals:[60,90,90,120,150]}}}
+  ex:['טכניקה כללית','תנועה מרכזית'],metric:{label:'דקות אימון בשבוע',unit:'',q:'כמה דקות התאמנת השבוע?',ph:'למשל 90',vals:[60,90,90,120,150]}}}
 (S.custom||[]).forEach(c=>{SPORTS[c.k]=makeCustom(c.name)});
 if(S.stage==='app')S.tab='home';
 function dropDemo(){for(const k of Object.keys(S.hist||{})){S.hist[k]=(S.hist[k]||[]).filter(e=>!e.demo);if(!S.hist[k].length)delete S.hist[k]}}
@@ -253,18 +253,18 @@ const AREAS={
   sport:{name:'ספורט',sub:'אימונים, טכניקה, פציעות',icon:'⚡'},
   study:{name:'לימודים',sub:'ריכוז, מבחנים, הרגלי למידה',
     plan:()=>[['בלוק לימוד ממוקד','2×25 דק׳ עם 5 דק׳ הפסקה. הטלפון בחדר אחר'],['חזרה קצרה','10 דק׳ על מה שלמדת אתמול']],
-    goals:['לשפר ציונים','להתכונן למבחן','ללמוד כל יום','להפסיק לדחות'],metric:{label:'שעות למידה בשבוע',unit:'',vals:[3,4,4,6,7]}},
+    goals:['לשפר ציונים','להתכונן למבחן','ללמוד כל יום','להפסיק לדחות'],metric:{label:'שעות למידה בשבוע',unit:'',q:'כמה שעות למדת השבוע?',ph:'למשל 5',vals:[3,4,4,6,7]}},
   sleep:{name:'שינה',sub:'שעות קבועות, יותר אנרגיה',
     plan:()=>[[`לישון ב-${S.bed}`,'מסך כבוי חצי שעה לפני'],[`לקום ב-${S.wake}`,'בלי סנוז. 10 דק׳ אור יום אחרי שקמים']],
-    goals:['ללכת לישון מוקדם יותר','לקום בלי סנוז','לישון 8 שעות','שעות קבועות'],metric:{label:'ממוצע שעות שינה',unit:'',vals:[6.2,6.5,6.8,7.1,7.4]}},
+    goals:['ללכת לישון מוקדם יותר','לקום בלי סנוז','לישון 8 שעות','שעות קבועות'],metric:{label:'ממוצע שעות שינה',unit:'',q:'כמה שעות ישנת בממוצע בלילות האחרונים?',ph:'למשל 7',vals:[6.2,6.5,6.8,7.1,7.4]}},
   language:{name:'שפה חדשה',sub:'מילים, דיבור, הבנה',
     plan:()=>{const L=S.newLang||'השפה החדשה';return [[`${L}: 10 מילים חדשות`,'כרטיסיות עם חזרה על המילים של אתמול'],[`${L}: 10 דק׳ הקשבה או דיבור`,'סרטון קצר, פודקאסט, או להקליט את עצמך מספר על היום']]},
-    goals:['לנהל שיחה בסיסית','להבין סדרות בלי תרגום','לעבור מבחן','ללמוד כל יום'],metric:{label:'מילים שלמדת',unit:'',vals:[40,90,150,220,300]}},
+    goals:['לנהל שיחה בסיסית','להבין סדרות בלי תרגום','לעבור מבחן','ללמוד כל יום'],metric:{label:'מילים שלמדת',unit:'',q:'כמה מילים חדשות כבר למדת?',ph:'למשל 50',vals:[40,90,150,220,300]}},
   screen:{name:'זמן מסך',sub:'פחות גלילה, יותר פוקוס',
     plan:()=>[[`תקרת מסך: ${S.screenGoal} שעות`,'הגדר הגבלת זמן לאפליקציות הרשתות'],['בלי טלפון במיטה','מטען מחוץ לחדר השינה']],
-    goals:['פחות רשתות חברתיות','בלי טלפון לפני שינה','לא לגלול בבוקר','להוריד שעות מסך'],metric:{label:'שעות מסך ביום',unit:'',vals:[6,5.5,5,4.2,3.8],lowerBetter:true}}
+    goals:['פחות רשתות חברתיות','בלי טלפון לפני שינה','לא לגלול בבוקר','להוריד שעות מסך'],metric:{label:'שעות מסך ביום',unit:'',q:'כמה שעות מסך היו לך היום? (רואים בהגדרות הטלפון)',ph:'למשל 4',vals:[6,5.5,5,4.2,3.8],lowerBetter:true}}
 };
-function makeArea(name){return{name,sub:'התחום שלך',custom:true,plan:()=>[[`צעד יומי: ${name}`,'15 דק׳ ממוקדות, אותה שעה כל יום']],goals:[],metric:{label:'ימים ברצף',unit:'',vals:[1,3,2,5,7]}}}
+function makeArea(name){return{name,sub:'התחום שלך',custom:true,plan:()=>[[`צעד יומי: ${name}`,'15 דק׳ ממוקדות, אותה שעה כל יום']],goals:[],metric:{label:'ימים ברצף',unit:'',q:'כמה ימים ברצף עמדת בצעד היומי?',ph:'למשל 3',vals:[1,3,2,5,7]}}}
 (S.customAreas||[]).forEach(c=>{AREAS[c.k]=makeArea(c.name)});
 if(S.stage==='app'&&!S.areas.length){S.stage='onb';S.onbStep=0;S.t0=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function addArea(name){name=name.trim();if(!name)return;const hit=Object.entries(AREAS).find(([k,a])=>a.name===name);
@@ -366,7 +366,8 @@ function aiFail(e){if(e?.code==='not_granted')return 'צריך להתחבר מח
   if(e?.code==='rate_limited')return 'יותר מדי בקשות כרגע. נסה שוב בעוד דקה.';
   return 'משהו השתבש בחיבור למאמן. נסה שוב.'}
 function profile(){const g=[...S.goalChips,S.goals].filter(Boolean).join(', ');
-  return `תחומי חיים: ${S.areas.map(a=>AREAS[a]?.name).join(', ')}. ספורט: ${S.sports.map(k=>SPORTS[k].name).join(', ')||'אין'}. מתחיל עם: ${focusName()}. ${S.areas.includes('sleep')?`שינה: רוצה לישון ב-${S.bed} ולקום ב-${S.wake}. `:''}${S.areas.includes('screen')?`זמן מסך היום כ-${S.screenNow} שעות, יעד ${S.screenGoal}. `:''}${S.areas.includes('study')&&S.studyWhat?`לימודים: ${S.studyWhat}. `:''}${S.areas.includes('language')?`לומד שפה חדשה: ${S.newLang||'לא צוין איזו'}, רמה: ${S.langLevel||'לא צוינה'}. `:''}`+` מטרות: ${g||'עוד לא נאמר'}. רמה: ${S.level||'לא נאמר'}. זמין ${S.days} ימים בשבוע, ${S.minutes} דק׳ לאימון${S.when?', בעיקר ב'+S.when:''}. מה גורם לו לוותר: ${S.quit.join(', ')||'לא נאמר'}. ניסיון קודם: ${S.past||'לא נאמר'}. שעת check-in: ${S.checkin}. שפה: ${S.lang==='en'?'אנגלית':'עברית'}.`}
+  return `תחומי חיים: ${S.areas.map(a=>AREAS[a]?.name).join(', ')}. ספורט: ${S.sports.map(k=>SPORTS[k].name).join(', ')||'אין'}. מתחיל עם: ${focusName()}. ${S.areas.includes('sleep')?`שינה: רוצה לישון ב-${S.bed} ולקום ב-${S.wake}. `:''}${S.areas.includes('screen')?`זמן מסך היום כ-${S.screenNow} שעות, יעד ${S.screenGoal}. `:''}${S.areas.includes('study')&&S.studyWhat?`לימודים: ${S.studyWhat}. `:''}${S.areas.includes('language')?`לומד שפה חדשה: ${S.newLang||'לא צוין איזו'}, רמה: ${S.langLevel||'לא צוינה'}. `:''}`+` מטרות: ${g||'עוד לא נאמר'}. רמה: ${S.level||'לא נאמר'}. זמין ${S.days} ימים בשבוע, ${S.minutes} דק׳ לאימון${S.when?', בעיקר ב'+S.when:''}. מה גורם לו לוותר: ${S.quit.join(', ')||'לא נאמר'}. ניסיון קודם: ${S.past||'לא נאמר'}. שעת check-in: ${S.checkin}. שפה: ${S.lang==='en'?'אנגלית':'עברית'}.${metricsLine()}`}
+function metricsLine(){const M=S.metrics||{};const parts=Object.keys(M).filter(k=>M[k]?.length).map(k=>{const m=(SPORTS[k]||AREAS[k])?.metric;const E=M[k];return `${m?.label||k}: ${E[E.length-1].v}${E.length>1?` (קודם ${E[0].v})`:''}`});return parts.length?' מדדים שהוא דיווח: '+parts.join('; ')+'.':''}
 const LANGLINE=()=>S.lang==='en'?'Always answer in English.':'ענה תמיד בעברית.';
 function activeInj(){return S.injuries.filter(i=>i.active)}
 
@@ -585,20 +586,26 @@ function sparkSvg(vals){if(vals.length<2)return '';const mx=Math.max(...vals),mn
   return `<svg class="spark" viewBox="0 0 120 44"><line x1="0" y1="40" x2="120" y2="40" stroke="var(--line)"/><polygon points="4,40 ${p} ${l[0]},40" fill="var(--accent-soft)"/><polyline points="${p}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round"/><circle cx="${l[0]}" cy="${l[1]}" r="3.5" fill="var(--accent)"/></svg>`}
 function ring(score){const c=2*Math.PI*34,f=c*score/10;const col=score>=8?'var(--good)':score>=5?'var(--accent)':'var(--bad)';
   return `<svg class="ring" viewBox="0 0 84 84"><circle cx="42" cy="42" r="34" fill="none" stroke="var(--surface-2)" stroke-width="8"/><circle cx="42" cy="42" r="34" fill="none" stroke="${col}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${f} ${c}" transform="rotate(-90 42 42)"/><text x="42" y="52" text-anchor="middle" font-family="Karantina,Heebo,sans-serif" font-weight="700" font-size="34" fill="var(--ink)">${score}</text></svg>`}
-function areaCard(a){const A=AREAS[a],m=A.metric;const last=m.vals[m.vals.length-1],first=m.vals[0];
-  const better=m.lowerBetter?last<first:last>first;
-  return `<section class="card"><div class="row between"><div class="eyebrow">${esc(A.name)} · ${esc(m.label)}</div><span class="tag demo">דוגמה</span></div>
-   <div class="metric"><div><span class="disp">${esc(last)}${esc(m.unit)}</span><div class="small ${better?'':'muted'}" style="${better?'color:var(--good)':''}">${better?'מגמה טובה':'עוד לא רואים שינוי'} · 5 השבועות האחרונים</div></div>${sparkSvg(m.vals)}</div></section>`}
+const gradeNum=v=>{const m=String(v).match(/(\d+(\.\d+)?)/);return m?Number(m[1]):NaN};
+function metricCard(key,title,m){const E=(S.metrics||{})[key]||[];const last=E[E.length-1];
+  const input=`<div class="addrow"><input type="text" id="mIn_${key}" inputmode="${m.grade?'text':'decimal'}" placeholder="${esc(m.ph||'')}"><button class="btn ghost" type="button" data-act="msave" data-k="${key}">${E.length?'עדכן':'שמור'}</button></div>`;
+  if(!last)return `<section class="card"><div class="eyebrow">${esc(title)}</div><div class="t">${esc(m.q||m.label)}</div>${input}<p class="small muted">כל פעם שתעדכן, תראה כאן איך אתה מתקדם.</p></section>`;
+  const nums=E.map(e=>m.grade?gradeNum(e.v):Number(e.v)).filter(x=>!isNaN(x));const first=nums[0],cur=nums[nums.length-1];
+  const diff=nums.length>1?cur-first:0;const better=m.lowerBetter?diff<0:diff>0;
+  const trend=nums.length<2?`עודכן ${esc(last.date)}`:diff===0?`כמו ב-${esc(E[0].date)}`:`${better?'שיפור':'שינוי'} מאז ${esc(E[0].date)}`;
+  return `<section class="card"><div class="eyebrow">${esc(title)}</div>
+   <div class="metric"><div><span class="disp">${esc(last.v)}${m.grade?'':esc(m.unit)}</span><div class="small ${better?'':'muted'}" style="${better?'color:var(--good)':''}">${trend}</div></div>${nums.length>1?sparkSvg(nums):''}</div>
+   ${input}</section>`}
+function areaCard(a){const A=AREAS[a];return metricCard(a,`${A.name} · ${A.metric.label}`,A.metric)}
 function progressView(){const areaCards=nonSport().map(areaCard).join('');
   if(!hasSport())return `<div class="stack"><h1 class="disp" style="font-size:48px">התקדמות</h1>${areaCards}</div>`;
   if(!S.first||!SPORTS[S.first])S.first=S.sports[0];
   if(!S.psport||!S.sports.includes(S.psport))S.psport=S.first;const sp=SPORTS[S.psport];if(!S.ex||!sp.ex.includes(S.ex))S.ex=sp.ex[0];
-  const m=sp.metric;const nums=m.num||m.vals;const last=m.vals[m.vals.length-1];const k=S.psport+'|'+S.ex;const H=S.hist[k]||[];const latest=H[H.length-1];
+  const m=sp.metric;const k=S.psport+'|'+S.ex;const H=S.hist[k]||[];const latest=H[H.length-1];
   return `<div class="stack"><h1 class="disp" style="font-size:48px">התקדמות</h1>${areaCards}
   <div class="eyebrow" style="margin-top:6px">ספורט</div>
   <div class="tabs">${S.sports.map(s=>`<button class="chip" data-act="psport" data-k="${s}" aria-pressed="${s===S.psport}">${SPORTS[s].name}</button>`).join('')}</div>
-  <section class="card"><div class="row between"><div class="eyebrow">${esc(m.label)}</div><span class="tag demo">דוגמה</span></div>
-   <div class="metric"><div><span class="disp">${esc(last)}${esc(m.unit)}</span><div class="small muted">5 השבועות האחרונים</div></div>${sparkSvg(nums)}</div></section>
+  ${metricCard(S.psport,m.label,m)}
   <section class="card"><div class="eyebrow">בדיקת טכניקה</div><h3>הראה למאמן איך אתה עושה את זה</h3>
    <div class="tabs">${sp.ex.map(x=>`<button class="chip" data-act="ex" data-x="${esc(x)}" aria-pressed="${x===S.ex}">${esc(x)}</button>`).join('')}</div>
    <div class="banner">טיפ לצילום: ${esc(TIPS[S.ex]||'צלם מהצד, כל הגוף בפריים')}</div>
@@ -811,6 +818,11 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   case'report':openReport();break;case'sendreport':sendReport();break;
   case'food':openFood();break;
   case'foodtext':scanFood(null);break;
+  case'msave':{const k=t.dataset.k;const el=$('#mIn_'+k);const raw=(el?.value||'').trim();
+    const m=(SPORTS[k]||AREAS[k])?.metric||{};const v=m.grade?raw.toUpperCase().replace(/\s+/g,''):raw.replace(',','.');
+    if(!v||(m.grade?isNaN(gradeNum(v)):isNaN(Number(v)))){toast(m.grade?'כתוב דרגה, למשל V3':'כתוב מספר');break}
+    S.metrics=S.metrics||{};const E=S.metrics[k]||(S.metrics[k]=[]);const d=today();
+    if(E.length&&E[E.length-1].date===d)E[E.length-1].v=v;else E.push({date:d,v});save();render();toast('נשמר');break}
   case'replan':buildAIPlan();break;
   case'steps':{const n=parseInt(($('#stepsIn').value||'').replace(/[^0-9]/g,''));if(!n){toast('הקלד מספר צעדים');break}S.steps[today()]=n;save();render();toast('הצעדים עודכנו');break}
   case'delmeal':{const M=S.meals[today()]||[];M.splice(+t.dataset.i,1);save();render();break}
