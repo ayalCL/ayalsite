@@ -326,6 +326,8 @@ async function loadRemote(){if(!USER)return;
   SB.auth.onAuthStateChange((ev,session)=>{if(session?.user&&(ev==='SIGNED_IN'||ev==='INITIAL_SESSION'))setTimeout(()=>onSignedIn(session),0)});
   try{const {data:{session}}=await SB.auth.getSession();if(session?.user)await onSignedIn(session);else{BOOT=false;render()}}
   catch(e){console.warn(e);BOOT=false;render()}})();
+function standalone(){try{return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}catch(e){return false}}
+function lastEmail(){try{return localStorage.getItem('plc-last-email')||''}catch(e){return ''}}
 const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 async function sendLink(){const em=($('#emailIn')?.value||S.pendingEmail||'').trim().toLowerCase();const err=$('#loginErr');
   if(!em){err.textContent='הקלד את כתובת האימייל שלך';$('#emailIn')?.focus();return}
@@ -336,7 +338,7 @@ async function sendLink(){const em=($('#emailIn')?.value||S.pendingEmail||'').tr
   const {error}=await SB.auth.signInWithOtp({email:em,options:{emailRedirectTo:location.origin+location.pathname}});
   if(b){b.disabled=false;b.textContent='שלח לי קישור כניסה'}
   if(error){err.textContent=/rate|seconds/i.test(error.message)?'שלחנו כבר קישור לפני רגע. חכה דקה ונסה שוב.':'השליחה נכשלה: '+error.message;return}
-  S.pendingEmail=em;save();render()}
+  try{localStorage.setItem('plc-last-email',em)}catch(e){}S.pendingEmail=em;save();render();setTimeout(()=>$('#codeIn')?.focus(),50)}
 async function verifyCode(){const code=($('#codeIn')?.value||'').replace(/\D/g,'');const err=$('#loginErr');
   if(code.length<6){err.textContent='הקוד מהמייל הוא 6 ספרות או יותר';return}
   const {data,error}=await SB.auth.verifyOtp({email:S.pendingEmail,token:code,type:'email'});
@@ -403,16 +405,16 @@ function loginView(){
   <h1 class="disp" style="margin-top:10px">המאמן שלך.<br><span>כל יום.</span></h1>
   <p class="muted" style="max-width:34ch">לא צריך להיות מושלם, צריך להיות עקבי. מתחילים בפחות מדקה.</p></div>`;
   if(S.pendingEmail&&SB)return hero+`<div class="stack">
-   <div class="card"><div class="eyebrow">בדוק את המייל</div><div class="t">שלחנו קישור כניסה ל-<span dir="ltr">${esc(S.pendingEmail)}</span></div>
-   <p class="small muted">פתח את המייל ולחץ על הקישור. אם נכנסת מהאייקון במסך הבית, עדיף להקליד כאן את הקוד מהמייל.</p>
+   <div class="card"><div class="eyebrow">בדוק את המייל</div><div class="t">שלחנו מייל ל-<span dir="ltr">${esc(S.pendingEmail)}</span></div>
+   <p class="small">${standalone()?'<b>הקלד כאן את הקוד מהמייל.</b> אל תלחץ על הקישור: הוא נפתח בדפדפן ולא באפליקציה.':'הקלד כאן את הקוד מהמייל, או לחץ על הקישור שבמייל.'}</p>
    <p class="small" style="color:var(--warn)">לא מוצא את המייל? בדוק בתיקיית <b>ספאם</b>, וסמן "לא ספאם" כדי שהמיילים הבאים יגיעו לתיבה הרגילה.</p></div>
-   <input type="text" id="codeIn" inputmode="numeric" autocomplete="one-time-code" dir="ltr" placeholder="קוד מהמייל" maxlength="10">
+   <input type="text" id="codeIn" inputmode="numeric" autocomplete="one-time-code" dir="ltr" placeholder="קוד מהמייל (6 ספרות)" maxlength="10" style="font-size:22px;letter-spacing:4px;text-align:center">
    <div id="loginErr" class="small" style="color:var(--bad)" role="alert"></div>
    <button class="btn block" type="button" data-act="verifycode">כניסה עם הקוד</button>
    <div class="row between"><button class="skip" type="button" data-act="sendlink">שלח שוב</button><button class="skip" type="button" data-act="changeemail">אימייל אחר</button></div></div>`;
   return hero+`<div class="stack" id="loginForm">
    <div class="eyebrow">כניסה עם אימייל</div>
-   <input type="email" id="emailIn" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" dir="ltr" placeholder="name@example.com" value="${esc(S.email||'')}">
+   <input type="email" id="emailIn" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" dir="ltr" placeholder="name@example.com" value="${esc(S.email||lastEmail())}">
    <input type="text" id="nameIn" autocomplete="given-name" placeholder="איך לקרוא לך? (לא חובה)" value="${esc(S.name||'')}">
    <div id="loginErr" class="small" style="color:var(--bad)" role="alert"></div>
    <button class="btn block" type="button" data-act="sendlink">${SB?'שלח לי קישור כניסה':'המשך'}</button>
