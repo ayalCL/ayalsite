@@ -98,6 +98,12 @@ textarea,input[type=text],input[type=time],input[type=email]{width:100%;border:1
 .task{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
 .task:first-of-type{border-top:0}
 .task input{width:22px;height:22px;accent-color:var(--accent);margin-top:2px;flex:none}
+.tick{width:24px;height:24px;border-radius:7px;flex:none;margin-top:2px;background:var(--good);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+.tick.off{background:transparent;border:2px solid var(--line)}
+.proofbtn{margin-top:6px;border-color:var(--accent);color:var(--accent)}
+.proof{display:flex;gap:8px;align-items:center;margin-top:6px;padding:6px;border-radius:10px;background:var(--good-soft)}
+.proof.no{background:var(--bad-soft)}
+.proof img{width:44px;height:44px;object-fit:cover;border-radius:8px;flex:none}
 .task.done .t{text-decoration:line-through;color:var(--muted)}
 .t{font-weight:700}
 .banner{background:var(--court-soft);color:var(--court);border-radius:10px;padding:10px 12px;font-size:14px}
@@ -541,7 +547,7 @@ async function buildAIPlan(){if(!AI||PLAN_BUSY)return;PLAN_BUSY=true;render();
 התאם לזמן הפנוי (${S.minutes} דק׳ ביום) ולרמה. ${activeInj().length?'יש פציעה פעילה: '+activeInj().map(i=>REG[i.region].n).join(', ')+'. אל תיתן תרגילים שמעמיסים עליה.':''}
 ${LANGLINE()} החזר רק JSON: {"note":"משפט אחד חם ואישי","items":[{"title":"משימה קצרה","detail":"מינון / פירוט בשורה אחת"}]}. 3-7 משימות.`);
     const items=(r.items||[]).filter(x=>x&&x.title).slice(0,8).map(x=>({title:String(x.title),detail:String(x.detail||'')}));
-    if(items.length){S.aiPlan={date:today(),items,note:String(r.note||'')};S.done[today()]={};save()}}
+    if(items.length){S.aiPlan={date:today(),items,note:String(r.note||'')};S.done[today()]={};if(S.proof)delete S.proof[today()];save()}}
   catch(e){console.warn('plan failed',e)}
   PLAN_BUSY=false;render()}
 function planItems(){const lastR=S.reports[S.reports.length-1];
@@ -554,6 +560,26 @@ function reportCard(){const doneToday=S.reports.some(r=>r.date===today());
   if(!reportOpen())return `<section class="card"><div class="eyebrow">דיווח ערב</div><p class="small muted">הדיווח ייפתח היום ב-<b class="num">${esc(S.checkin)}</b>. בינתיים, תתמקד בתוכנית.</p></section>`;
   return `<section class="card"><div class="eyebrow">דיווח ערב</div><h3>איך היה היום?</h3><p class="small muted">דקה אחת: מה עשית, מה היה קשה, במה הצלחת. המאמן בונה מזה את מחר.</p><button class="btn" data-act="report">לדווח</button>
    ${S.reports.length?`<p class="small muted">דיווחת ${S.reports.length} פעמים. עקביות היא כל הסוד.</p>`:''}</section>`}
+function taskRow(t,d,i,done){const P=((S.proof||{})[today()]||{})[i];const busy=PROOF_BUSY===i;
+  const mark=done[i]?'<span class="tick" aria-label="בוצע">✓</span>':'<span class="tick off" aria-hidden="true"></span>';
+  return `<div class="task ${done[i]?'done':''}">${mark}<div style="flex:1;min-width:0"><div class="t">${esc(t)}</div><div class="small muted">${esc(d)}</div>
+   ${P?.feedback?`<div class="proof ${P.ok?'ok':'no'}">${P.thumb?`<img src="${P.thumb}" alt="">`:''}<span class="small">${esc(P.feedback)}</span></div>`:''}
+   ${busy?'<div class="small muted">המאמן בודק את ההוכחה…</div>':done[i]?'':`<button class="chip small proofbtn" type="button" data-act="proof" data-i="${i}">📷 צלם והוכח</button>`}</div></div>`}
+let PROOF_BUSY=-1,PROOF_I=-1;
+async function checkProof(file,i){const {items}=planItems();const it=items[i];if(!it)return;
+  PROOF_BUSY=i;render();let fr=[];
+  try{fr=await grabFrames(file,3)}catch(e){PROOF_BUSY=-1;render();toast(videoErr(e));return}
+  const thumbs=(await Promise.all(fr.map(thumb))).filter(Boolean);let r;
+  if(AI&&IMG){try{r=await AI.json(`אתה מאמן אישי שבודק הוכחה שהמתאמן ביצע משימה מהתוכנית היומית שלו.
+המשימה: "${it[0]}" (${it[1]}).
+מצורפות ${fr.length} תמונות (מסרטון או תמונה, או צילום מסך מאפליקציה). האם רואים בהן שהוא ביצע את המשימה? היה הוגן: לא צריך לראות את כל המינון, מספיק שרואים שהוא עשה את התרגיל או הפעילות הנכונה. צילום מסך רלוונטי (שעון מעורר, אפליקציית לימוד, סדרה עם כתוביות, זמן מסך) נחשב הוכחה למשימות שאי אפשר לצלם בגוף.
+${LANGLINE()} החזר רק JSON: {"done":true,"feedback":"משפט אחד קצר כמאמן: מה טוב, ואם יש, דבר אחד לשפר","missing":"אם done=false: מה חסר בהוכחה, במשפט אחד"}`,{images:fr,modelTier:'default'})}
+    catch(e){PROOF_BUSY=-1;render();toast(aiFail(e));return}}
+  else r={done:true,feedback:'קיבלתי את ההוכחה ✓ (מצב הדגמה, המאמן לא בדק אותה)',demo:true};
+  const ok=!!r.done;S.proof=S.proof||{};const P=S.proof[today()]||(S.proof[today()]={});
+  P[i]={ok,thumb:thumbs[0]||null,feedback:ok?String(r.feedback||'כל הכבוד!'):String(r.missing||r.feedback||'לא רואים בתמונה את המשימה. נסה לצלם שוב.')};
+  if(ok){const d=S.done[today()]||(S.done[today()]={});d[i]=true}
+  PROOF_BUSY=-1;save();render();toast(ok?'המשימה סומנה כבוצעה ✓':'המאמן לא הצליח לראות שהמשימה בוצעה')}
 function energyLine(){const e=S.energy[today()];
   if(e==='low')return 'אנרגיה נמוכה זה מידע, לא כישלון. היום עושים רק את 2 המשימות הראשונות בעצימות של 70%. עקביות לפני שלמות.';
   if(e==='mid')return 'יום רגיל. עושים את התוכנית כמו שהיא, ובסוף מדווחים מה עבד.';
@@ -574,7 +600,8 @@ function homeView(){const h=new Date().getHours();const hi=h<12?'בוקר טוב
   <section class="card"><div class="row between"><div class="eyebrow">התוכנית להיום</div><div class="row"><span class="num small muted">${nDone}/${items.length}</span>${AI&&!PLAN_BUSY?'<button class="chip small" data-act="replan">בנה מחדש</button>':''}</div></div>
    ${PLAN_BUSY?'<div class="banner">המאמן בונה לך תוכנית לפי המטרות שלך…</div>':fromAI&&note?`<div class="coachline">${esc(note)}</div>`:fromReport?'<div class="banner">התוכנית נבנתה מחדש לפי דיווח הערב שלך</div>':''}
    ${inj.length?`<div class="banner bad">שים לב: ${esc(REG[inj[0].region].n)} ${esc(inj[0].side)} בפציעה. דלג על כל תרגיל שמכאיב שם.</div>`:''}
-   <div>${items.map(([t,d],i)=>`<label class="task ${done[i]?'done':''}"><input type="checkbox" id="task${i}" data-act="task" data-i="${i}" ${done[i]?'checked':''}><div><div class="t">${esc(t)}</div><div class="small muted">${esc(d)}</div></div></label>`).join('')}</div></section>
+   <div>${items.map(([t,d],i)=>taskRow(t,d,i,done)).join('')}</div>
+   <input type="file" id="proofIn" accept="image/*,video/*" class="hidden"></section>
   ${reportCard()}
   <section class="card"><div class="row between"><div class="eyebrow">צעדים היום</div><span class="small muted num">יעד ${S.stepGoal.toLocaleString('he-IL')}</span></div>
    ${(()=>{const st=S.steps[today()]||0,pc=Math.min(100,Math.round(st/S.stepGoal*100));return `<div class="row between" style="align-items:flex-end"><span class="disp" style="font-size:52px">${st.toLocaleString('he-IL')}</span><span class="small ${pc>=100?'':'muted'}" style="${pc>=100?'color:var(--good);font-weight:700':''}">${pc>=100?'עברת את היעד!':pc+'% מהיעד'}</span></div>
@@ -865,6 +892,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   case'report':openReport();break;case'sendreport':sendReport();break;
   case'food':openFood();break;
   case'foodtext':scanFood(null);break;
+  case'proof':PROOF_I=+t.dataset.i;{const inp=$('#proofIn');inp.value='';inp.click()}break;
   case'install':if(installEvt){installEvt.prompt();installEvt.userChoice.then(c=>{if(c.outcome==='accepted'){INSTALLED=true}installEvt=null;render()})}break;
   case'msave':{const k=t.dataset.k;const el=$('#mIn_'+k);const raw=(el?.value||'').trim();
     const m=(SPORTS[k]||AREAS[k])?.metric||{};const v=m.grade?raw.toUpperCase().replace(/\s+/g,''):raw.replace(',','.');
@@ -889,7 +917,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   case'reset':if(t.dataset.confirm){const keep={uid:S.uid,email:S.email,name:S.name};try{localStorage.removeItem(KEY)}catch(_){}S=Object.assign(fresh(),keep,USER?{stage:'onb',t0:Date.now()}:{});save();render()}else{t.dataset.confirm=1;t.textContent='בטוח? לחץ שוב';setTimeout(()=>{if(t.isConnected){delete t.dataset.confirm;t.textContent='איפוס'}},3000)}break;
   }});
 document.addEventListener('change',e=>{const t=e.target;
-  if(t.dataset.act==='task'){const d=S.done[today()]||(S.done[today()]={});d[t.dataset.i]=t.checked;save();render()}
+  if(t.id==='proofIn'&&t.files[0]&&PROOF_I>=0){const f=t.files[0];checkProof(f,PROOF_I)}
   if(t.dataset.act==='flag'){const v=t.dataset.v;IJ.flags=t.checked?[...IJ.flags,v]:IJ.flags.filter(x=>x!==v)}
   if(t.id==='vidIn'&&t.files[0])analyze(t.files[0]);
   if(t.id==='foodIn'&&t.files[0])scanFood(t.files[0]);
