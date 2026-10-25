@@ -564,15 +564,34 @@ function taskRow(t,d,i,done){const P=((S.proof||{})[today()]||{})[i];const busy=
   const mark=done[i]?'<span class="tick" aria-label="בוצע">✓</span>':'<span class="tick off" aria-hidden="true"></span>';
   return `<div class="task ${done[i]?'done':''}">${mark}<div style="flex:1;min-width:0"><div class="t">${esc(t)}</div><div class="small muted">${esc(d)}</div>
    ${P?.feedback?`<div class="proof ${P.ok?'ok':'no'}">${P.thumb?`<img src="${P.thumb}" alt="">`:''}<span class="small">${esc(P.feedback)}</span></div>`:''}
-   ${busy?'<div class="small muted">המאמן בודק את ההוכחה…</div>':done[i]?'':`<button class="chip small proofbtn" type="button" data-act="proof" data-i="${i}">📷 צלם והוכח</button>`}</div></div>`}
-let PROOF_BUSY=-1,PROOF_I=-1;
+   ${busy?'<div class="small muted">המאמן בודק…</div>':done[i]?'':isTalkTask(t)?`<button class="chip small proofbtn" type="button" data-act="talk" data-i="${i}">🗣️ תרגל עם המאמן</button>`:`<button class="chip small proofbtn" type="button" data-act="proof" data-i="${i}">📷 הראה למאמן</button>`}</div></div>`}
+function isTalkTask(t){return /שיחה|דיבור|לדבר|conversation|speak/i.test(t)}
+function talkLang(t){const m=String(t).match(/אנגלית|ספרדית|צרפתית|ערבית|גרמנית|איטלקית|רוסית|יפנית|סינית|קוריאנית|פורטוגזית/);return m?m[0]:(S.newLang||'אנגלית')}
+const TALK_TARGET=5;
+function activeTalk(){const P=S.practice;return P&&P.date===today()&&!P.done?P:null}
+function startTalk(i){const it=planItems().items[i];if(!it)return;const L=talkLang(it[0]+' '+it[1]);
+  S.practice={date:today(),i,n:0,lang:L,task:it[0]};S.tab='coach';
+  const en=/אנגלית/.test(L);
+  S.chat.push({role:'assistant',content:`🗣️ **תרגול שיחה ב${L}**\nמעכשיו אני מדבר איתך ב${L}. תענה ב${L}, גם עם טעויות, ואני אתקן בעדינות. אחרי ${TALK_TARGET} תשובות שלך המשימה תסומן ✓\n\n${en?'Hi! How was your day today? What did you do?':'כתוב לי משפט ראשון ב'+L+' על היום שלך.'}`});
+  save();render()}
+let PROOF_BUSY=-1,PROOF_I=-1,WHAT_RES=null;
+function askWhat(thumbs,title,prefill,ph){return new Promise(res=>{WHAT_RES=res;
+  sheet(`${head('לפני שהמאמן בודק',esc(title))}
+   ${thumbs.length?`<div class="frames">${thumbs.map(t=>`<img src="${t}" alt="">`).join('')}</div>`:''}
+   <textarea id="whatIn" rows="3" placeholder="${esc(ph)}">${esc(prefill||'')}</textarea>
+   <p class="small muted">כתוב במילים שלך מה ניסית לעשות, כדי שהמאמן יבין מה לבדוק.</p>
+   <div class="row"><button class="btn ghost" type="button" data-act="whatcancel">ביטול</button><button class="btn" style="flex:1" type="button" data-act="whatok">שלח למאמן</button></div>`);
+  setTimeout(()=>{const w=$('#whatIn');if(w){w.focus();w.setSelectionRange(w.value.length,w.value.length)}},50)})}
 async function checkProof(file,i){const {items}=planItems();const it=items[i];if(!it)return;
-  PROOF_BUSY=i;render();let fr=[];
-  try{fr=await grabFrames(file,3)}catch(e){PROOF_BUSY=-1;render();toast(videoErr(e));return}
-  const thumbs=(await Promise.all(fr.map(thumb))).filter(Boolean);let r;
+  let fr=[];toast('מכין…');
+  try{fr=await grabFrames(file,3)}catch(e){toast(videoErr(e));return}
+  const thumbs=(await Promise.all(fr.map(thumb))).filter(Boolean);
+  const what=await askWhat(thumbs,'מה עשית?','','למשל: 5 סטים של 30 שניות עמידת ידיים מול קיר');if(what===null)return;
+  PROOF_BUSY=i;render();let r;
   if(AI&&IMG){try{r=await AI.json(`אתה מאמן אישי שבודק הוכחה שהמתאמן ביצע משימה מהתוכנית היומית שלו.
 המשימה: "${it[0]}" (${it[1]}).
-מצורפות ${fr.length} תמונות (מסרטון או תמונה, או צילום מסך מאפליקציה). האם רואים בהן שהוא ביצע את המשימה? היה הוגן: לא צריך לראות את כל המינון, מספיק שרואים שהוא עשה את התרגיל או הפעילות הנכונה. צילום מסך רלוונטי (שעון מעורר, אפליקציית לימוד, סדרה עם כתוביות, זמן מסך) נחשב הוכחה למשימות שאי אפשר לצלם בגוף.
+${what?`המתאמן כתב מה עשה: "${what}". קח את זה בחשבון כשאתה בודק מה רואים.
+`:''}מצורפות ${fr.length} תמונות (מסרטון או תמונה, או צילום מסך מאפליקציה). האם רואים בהן שהוא ביצע את המשימה? היה הוגן: לא צריך לראות את כל המינון, מספיק שרואים שהוא עשה את התרגיל או הפעילות הנכונה. צילום מסך רלוונטי (שעון מעורר, אפליקציית לימוד, סדרה עם כתוביות, זמן מסך) נחשב הוכחה למשימות שאי אפשר לצלם בגוף.
 ${LANGLINE()} החזר רק JSON: {"done":true,"feedback":"משפט אחד קצר כמאמן: מה טוב, ואם יש, דבר אחד לשפר","missing":"אם done=false: מה חסר בהוכחה, במשפט אחד"}`,{images:fr,modelTier:'default'})}
     catch(e){PROOF_BUSY=-1;render();toast(aiFail(e));return}}
   else r={done:true,feedback:'קיבלתי את ההוכחה ✓ (מצב הדגמה, המאמן לא בדק אותה)',demo:true};
@@ -629,6 +648,7 @@ function coachView(){if(!S.chat.length){const g=[...S.goalChips,S.goals].filter(
 function msgHtml(m){let extra='';const th=m.thumbs?.length?`<div class="frames">${m.thumbs.map(t=>`<img src="${t}" alt="">`).join('')}</div>`:'';if(m.role==='user'&&PAIN.test(m.content)){const r=detectRegion(m.content);extra=`<button class="chip" style="align-self:flex-start" data-act="pain" data-r="${r||''}">פתח מפת גוף${r?' · '+REG[r].n:''}</button>`}
   return `<div class="msg ${m.role==='user'?'u':'a'}">${th}${fmt(m.content)}</div>${extra}`}
 function renderSugg(){$('#sugg').innerHTML=['מה האימון היום?','אני עייף, לוותר היום?','כואב לי המרפק אחרי אימון','איך משפרים '+(SPORTS[S.first]?.ex[0]||'')+'?'].map(t=>`<button class="chip" data-act="say">${esc(t)}</button>`).join('')}
+function talkRules(){const P=activeTalk();if(!P)return '';return `\n\nחשוב, עכשיו תרגול שיחה: המשימה "${P.task}". דבר איתו ב${P.lang} בלבד, ברמה ${S.langLevel||'בסיסית'}, משפטים קצרים ושאלה אחת בכל הודעה. אם יש טעות בהודעה האחרונה שלו, הוסף בסוף שורה קצרה בעברית: "תיקון: ...". זה גובר על הוראת השפה למעלה.`}
 function rules(){const r=S.reports.slice(-3).map(x=>`${x.date}: עשה: ${x.did}; קשה: ${x.hard}; הצליח: ${x.win}; רוצה להתמקד: ${x.focus}`).join('\n');
   return `אתה "המאמן" באפליקציה Personal Life Coach: מאמן ספורט אישי צמוד, חם אבל דורש, שמכיר את המתאמן לאורך זמן. ${LANGLINE()} ענה בקצרה (עד 5 משפטים או רשימה קצרה), בגוף שני, בלי כותרות.
 פרופיל: ${profile()}
@@ -637,7 +657,7 @@ function rules(){const r=S.reports.slice(-3).map(x=>`${x.date}: עשה: ${x.did}
 פציעות במעקב: ${activeInj().map(i=>`${REG[i.region].n} ${i.side}, כאב ${i.pain}/10`).join('; ')||'אין'}
 עקרונות: עקביות לפני שלמות; כישלון הוא מידע ולא עונש. תן ידע מקצועי, מדויק ויעיל בתחומי הספורט שלו, בלי הרצאות. סיים לרוב בשאלה אחת או בצעד מעשי אחד.
 פציעות: לעולם אל תאבחן. שאל באיזו תנועה כואב ומה מקל. אם יש סימן אדום (נפיחות חזקה, חוסר תחושה, חוסר יכולת להזיז, אחרי נפילה, קליק) הפנה לרופא או פיזיותרפיסט. הצע ללחוץ על הכפתור "משהו כואב?" לבדיקה מסודרת.
-אם הוא שואל על טכניקה, הצע לו להעלות סרטון במסך "התקדמות".`}
+אם הוא שואל על טכניקה, הצע לו להעלות סרטון במסך "התקדמות".${talkRules()}`}
 function fallbackChat(t){if(PAIN.test(t))return 'אוי, בוא נבין את זה. באיזו תנועה זה כואב, ומה מקל? הכי מהיר: לחץ על "פתח מפת גוף" ונעבור על זה ביחד. אם יש נפיחות חזקה או חוסר תחושה, זה לרופא.\n\n(מצב הדגמה)';
   if(/עייף|לוותר|אין כוח/.test(t))return 'לא מוותרים, מקטינים. היום רק המשימה הראשונה, ב-70%. יום קצר עדיף על יום שלא קרה. מה הכי קל לך מהרשימה?\n\n(מצב הדגמה)';
   if(/אימון|היום/.test(t))return `היום: ${planItems().items.slice(0,3).map(x=>x[0]).join(', ')}. תתחיל מהראשון ותדווח לי בערב איך הלך.\n\n(מצב הדגמה)`;
@@ -652,7 +672,12 @@ async function sendChat(text,media){if(chatBusy||(!text.trim()&&!media))return;c
   else{try{const turns=S.chat.slice(-14).map((m,i,a)=>({role:m.role,content:(m.thumbs?(m===a[a.length-1]&&media?`[המתאמן שלח ${media.video?'סרטון':'תמונה'}${media.video?`, מצורפים ${media.frames.length} פריימים ברצף מתוכו`:''}. התבונן בתמונות וענה כמאמן: מה הוא עושה, מה טוב, ומה לתקן (אם רלוונטי).] `:'[צירף סרטון/תמונה קודם בשיחה] '):'')+m.content}));
    const r=await AI([{role:'user',content:rules()},...turns],{cache:false,...(media?{images:media.frames,modelTier:'default'}:{}),modelTier:'quick',onText:({text})=>{b.classList.remove('think');b.innerHTML=fmt(text)}});reply=r.text}
    catch(e){reply=(e.text?e.text+'\n\n':'')+aiFail(e)}}
-  S.chat.push({role:'assistant',content:reply});save();chatBusy=false;render()}
+  S.chat.push({role:'assistant',content:reply});
+  const P=activeTalk();if(P&&!media){P.n=(P.n||0)+1;
+    if(P.n>=TALK_TARGET){P.done=true;const d=S.done[today()]||(S.done[today()]={});d[P.i]=true;
+      S.proof=S.proof||{};(S.proof[today()]||(S.proof[today()]={}))[P.i]={ok:true,thumb:null,feedback:`שיחה של ${P.n} הודעות ב${P.lang} עם המאמן`};
+      S.chat.push({role:'assistant',content:`✓ **סיימנו את התרגול!** המשימה "${P.task}" סומנה כבוצעה. מכאן אני חוזר לעברית.`})}}
+  save();chatBusy=false;render()}
 
 /* ---------- progress ---------- */
 function sparkSvg(vals){if(vals.length<2)return '';const mx=Math.max(...vals),mn=Math.min(...vals),rg=mx-mn||1;
@@ -683,8 +708,7 @@ function progressView(){const areaCards=nonSport().map(areaCard).join('');
   <section class="card"><div class="eyebrow">בדיקת טכניקה</div><h3>הראה למאמן איך אתה עושה את זה</h3>
    <div class="tabs">${sp.ex.map(x=>`<button class="chip" data-act="ex" data-x="${esc(x)}" aria-pressed="${x===S.ex}">${esc(x)}</button>`).join('')}</div>
    <div class="banner">טיפ לצילום: ${esc(TIPS[S.ex]||'צלם מהצד, כל הגוף בפריים')}</div>
-   <input type="text" id="vidWhat" placeholder="מה אתה עושה בסרטון? (לא חובה, למשל: גלישה, בעיטה לשער)">
-   <p class="small muted">אפשר לשלוח כל פעילות. המאמן מזהה מה רואים בסרטון ומנתח את זה.</p>
+   <p class="small muted">אפשר לשלוח כל פעילות. אחרי שתבחר סרטון, תכתוב מה עשית בו.</p>
    <label class="btn block" for="vidIn" style="cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>צלם או העלה סרטון</label>
    <input type="file" id="vidIn" accept="video/*,image/*" class="hidden">
    <div id="anaOut"></div>
@@ -734,9 +758,9 @@ async function analyze(file){const out=$('#anaOut');const k=S.psport+'|'+S.ex;co
   out.innerHTML='<p class="muted">מכין פריימים מהסרטון…</p>';
   let fr=[];try{fr=await grabFrames(file,Math.max(1,Math.min(4,IMG||4)))}catch(e){console.warn('video',e);out.innerHTML=`<div class="banner bad">${esc(videoErr(e))}</div>`;return}
   const thumbs=(await Promise.all(fr.map(thumb))).filter(Boolean);
+  out.innerHTML='';const what=await askWhat(thumbs,'מה עשית בסרטון?',S.ex,'למשל: ניסיון להחזקת טאק פלאנש');if(what===null)return;
   out.innerHTML=`<div class="frames">${thumbs.map(t=>`<img src="${t}" alt="">`).join('')}</div><p class="muted">המאמן מנתח את הטכניקה… (עד דקה)</p>`;
   let r;
-  const what=($('#vidWhat')?.value||'').trim();
   if(AI&&IMG){try{r=await AI.json(`אתה מאמן מומחה לכל סוגי הספורט. מצורפות ${fr.length} תמונות ברצף מתוך סרטון. המתאמן בחר באפליקציה: ${S.ex} (${SPORTS[S.psport].name}).${what?' הוא כתב שבסרטון: '+what+'.':''}
 חשוב: נתח את מה שבאמת רואים בתמונות. אם זו פעילות אחרת ממה שנבחר (למשל גלישה במקום כדורסל), זהה אותה ותן משוב על הפעילות הזו. נתח את הטכניקה כמו מאמן צמוד: ספציפי, קצר, מעשי.
 ${prev?`בפעם הקודמת הציון היה ${prev.score} והתיקון העיקרי היה: ${prev.fix?.[0]||''}. התייחס אם השתפר.`:''}
@@ -892,6 +916,9 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   case'report':openReport();break;case'sendreport':sendReport();break;
   case'food':openFood();break;
   case'foodtext':scanFood(null);break;
+  case'talk':startTalk(+t.dataset.i);break;
+  case'whatok':{const v=($('#whatIn')?.value||'').trim();const r=WHAT_RES;WHAT_RES=null;closeSheet();r&&r(v);break}
+  case'whatcancel':{const r=WHAT_RES;WHAT_RES=null;closeSheet();r&&r(null);break}
   case'proof':PROOF_I=+t.dataset.i;{const inp=$('#proofIn');inp.value='';inp.click()}break;
   case'install':if(installEvt){installEvt.prompt();installEvt.userChoice.then(c=>{if(c.outcome==='accepted'){INSTALLED=true}installEvt=null;render()})}break;
   case'msave':{const k=t.dataset.k;const el=$('#mIn_'+k);const raw=(el?.value||'').trim();
@@ -902,7 +929,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   case'replan':buildAIPlan();break;
   case'steps':{const n=parseInt(($('#stepsIn').value||'').replace(/[^0-9]/g,''));if(!n){toast('הקלד מספר צעדים');break}S.steps[today()]=n;save();render();toast('הצעדים עודכנו');break}
   case'delmeal':{const M=S.meals[today()]||[];M.splice(+t.dataset.i,1);save();render();break}
-  case'close':case'closebg':closeSheet();break;
+  case'close':case'closebg':{const r=WHAT_RES;WHAT_RES=null;closeSheet();r&&r(null);break}
   case'say':sendChat(t.textContent);break;
   case'pain':openInjury(t.dataset.r||null);break;
   case'psport':S.psport=t.dataset.k;S.ex=null;save();render();break;
@@ -926,8 +953,9 @@ document.addEventListener('change',e=>{const t=e.target;
 async function sendMedia(f){if(chatBusy)return;const box=$('#msgs');const b=document.createElement('div');b.className='msg a think';b.textContent='מכין את הסרטון…';box?.append(b);scrollTo(0,document.body.scrollHeight);let fr;
   try{fr=await grabFrames(f,Math.max(1,Math.min(4,IMG||4)))}catch(e){console.warn('video',e);b.remove();S.chat.push({role:'assistant',content:videoErr(e)});save();render();return}
   b.remove();
-  const thumbs=(await Promise.all(fr.map(thumb))).filter(Boolean);const i=$('#chatIn');const txt=i.value;i.value='';
-  sendChat(txt,{frames:fr,thumbs,video:f.type.startsWith('video/')})}
+  const thumbs=(await Promise.all(fr.map(thumb))).filter(Boolean);const i=$('#chatIn');const pre=i.value;
+  const what=await askWhat(thumbs,'מה שלחת?',pre,'למשל: ניסיון להחזקת טאק פלאנש. מה לתקן?');if(what===null)return;i.value='';
+  sendChat(what,{frames:fr,thumbs,video:f.type.startsWith('video/')})}
 async function readSteps(f){if(!(AI&&IMG)){toast('קריאת צילום מסך עובדת כשהמאמן AI מחובר. בינתיים הקלד את המספר');return}
   toast('קורא את הצעדים מהתמונה…');
   try{const r=await AI.json('זהו צילום מסך מאפליקציית בריאות או כושר. מצא את מספר הצעדים של היום. החזר רק JSON: {"steps":1234} או {"steps":null} אם אין מספר צעדים בתמונה.',{images:[f],modelTier:'quick'});
