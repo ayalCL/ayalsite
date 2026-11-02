@@ -758,7 +758,8 @@ function liveMeasure(id,lm,ar,L){const E=LIVE_EX[id]||{kind:'general'};const sd=
   const need=E.kind==='general'?[S_,H]:E.kind==='pull'?[S_,El,W]:E.kind==='reps'?(E.sig==='arm'||E.sig==='pull'?[S_]:E.sig==='leg'?[H,K,A0]:[S_,H,K]):[S_,El,W,H,K];
   const visible=need.every(q=>q.v>T);
   // facing the camera? shoulders look wide compared to the torso
-  const sw=Math.hypot((lm[11].x-lm[12].x)*ar,lm[11].y-lm[12].y),tl=Math.hypot(S_.x-H.x,S_.y-H.y);const front=lm[11].visibility>T&&lm[12].visibility>T&&sw>0.8*tl;
+  const sw=Math.hypot((lm[11].x-lm[12].x)*ar,lm[11].y-lm[12].y),tl=Math.hypot(S_.x-H.x,S_.y-H.y);const front=lm[11].visibility>T&&lm[12].visibility>T&&(H.v<=T||sw>0.8*tl);
+  const syAvg=(lm[11].y+lm[12].y)/2;const elb=[[11,13,15],[12,14,16]].filter(q=>q.every(i=>(lm[i].visibility??1)>T)).map(q=>ang(g(q[0]),g(q[1]),g(q[2])));const elbowAvg=elb.length?elb.reduce((x,y)=>x+y,0)/elb.length:null;
   // average both sides when both are seen
   const both=(f)=>{const vals=[SIDE_L,SIDE_R].map(sd2=>f(g(sd2.s),g(sd2.e),g(sd2.w),g(sd2.h),g(sd2.k),g(sd2.a))).filter(x=>x!=null);return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null};
   let sig=null;
@@ -774,7 +775,7 @@ function liveMeasure(id,lm,ar,L){const E=LIVE_EX[id]||{kind:'general'};const sd=
   const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);const armLen=dist(S_,El)+dist(El,W);
   const pos={ey:El.v>T?El.y:null,sy:S_.y,wy:W.v>T?W.y:(L?.wyLast??null),hy:H.v>T?H.y:null,ky:K.v>T?K.y:null,ay:A0.v>T?A0.y:null,armLen,torsoTilt:H.v>T?tilt(S_,H):null};
   const chin=ys.wr!=null?lm[0].y<ys.wr+0.01:(L?.wyLast!=null?lm[0].y<L.wyLast+0.01:false);
-  return{visible,front,sig,ys,chin,pos,elbow,knee,hip,line,bodyTilt,noseAboveWrist:N.y<W.y,wristAboveShoulder:W.y<S_.y,inverted:A.y<H.y&&H.y<S_.y,hipBelowKnee:H.y>=K.y-0.02,feetUp:A.y<W.y-0.02}}
+  return{visible,front,sw,syAvg,elbowAvg,sig,ys,chin,pos,elbow,knee,hip,line,bodyTilt,noseAboveWrist:N.y<W.y,wristAboveShoulder:W.y<S_.y,inverted:A.y<H.y&&H.y<S_.y,hipBelowKnee:H.y>=K.y-0.02,feetUp:A.y<W.y-0.02}}
 // stop = the position is lost (clock stops). tip = still counts, but here is what to improve.
 function holdPose(kind,m){const P=m.pos||{};if(P.wy==null)return null;const arm=P.armLen||0.2;
   const below=P.wy>P.sy+0.4*arm, above=P.wy<P.sy-0.4*arm, feetUp=P.ay!=null&&P.ay<P.wy-0.02;
@@ -805,7 +806,9 @@ function realRep(E,rng,m){const d=k=>rng[k]?rng[k][1]-rng[k][0]:null;const sh=d(
   const flat=P.torsoTilt!=null&&P.torsoTilt<40, upright=P.torsoTilt!=null&&P.torsoTilt>50&&P.hy!=null&&P.sy<P.hy;
   const handsBelow=m.ys?.wr!=null&&m.ys?.sh!=null?m.ys.wr>m.ys.sh:true, handsAbove=m.ys?.wr!=null&&m.ys?.sh!=null?m.ys.wr<m.ys.sh:false;
   if(E===LIVE_EX.pushup){if(sh==null||sh<0.03||(wr!=null&&wr>0.6*sh)||!handsBelow)return false;
-    if(P.wy!=null&&P.armLen&&P.wy<P.sy+0.4*P.armLen)return false;            // arms under the body at the top
+    if(m.front&&m.sw&&sh<0.25*m.sw)return false;                             // from the front: a real drop of the shoulders
+    if(m.front&&(m.wyLast==null||m.wyLast<m.syAvg+0.3*m.sw))return false;       // from the front: hands seen on the floor, below the shoulders
+    if(!m.front&&P.wy!=null&&P.armLen&&P.wy<P.sy+0.4*P.armLen)return false;  // from the side: arms under the body at the top
     if(!m.front&&P.torsoTilt!=null&&!flat)return false;                    // from the side the body must be horizontal
     if(!m.front&&m.ys?.an!=null&&m.bodyTilt>45)return false;return true}
   if(E===LIVE_EX.dips){if(sh==null||sh<0.03||(wr!=null&&wr>0.6*sh)||!handsBelow)return false;
@@ -824,24 +827,30 @@ function repEnd(L,t,ok,why){const r=L.rep;if(r)L.log.push({ok,why:why||'',min:Ma
 function liveStep(L,m,t){const E=LIVE_EX[L.id]||{kind:'general'};L.frames++;if(!m.visible){L.msg='צריך לראות את כל הגוף בפריים';L.cls='bad';L.lastT=t;return}L.seen++;
   const dt=L.lastT?Math.min(200,t-L.lastT):0;L.lastT=t;
   const note=x=>{L.issues[x]=(L.issues[x]||0)+1};
-  if(E.kind==='reps'){let raw=m.sig;if(raw==null){L.msg='צריך לראות את '+(E.sig==='leg'?'המותניים, הברכיים והרגליים':'הכתפיים והידיים');L.cls='bad';return}
-    if(E.sig==='arm'||E.sig==='pull'){L.sMax=Math.max((L.sMax||raw)*0.9985,raw);raw=raw/L.sMax}  // 1 = arms straight, as you stand right now
-    L.smooth=L.smooth==null?raw:L.smooth*0.6+raw*0.4;const a=L.smooth,R=0.2;L.dbg=`${m.front?'מלפנים':'מהצד'} · עומק ${Math.max(0,Math.round((1-a)*100))}%`;const ang_=m[E.joint];
+  if(E.kind==='reps'){
+    // push-ups: decide once whether we film from the front or the side, switch only if it stays different
+    let useFront=false;if(E===LIVE_EX.pushup){const want=m.front?'front':'side';
+      if(!L.mode){L.mode=want;L.modeN=0}else if(want!==L.mode){if(++L.modeN>45){L.mode=want;L.modeN=0;L.ph=null;L.smooth=null;L.rep=null;L.sMax=null}}else L.modeN=0;
+      useFront=L.mode==='front'&&m.sw>0.02;
+      if(useFront){L.swRef=L.swRef==null?m.sw:(m.sw>L.swRef?L.swRef*0.9+m.sw*0.1:L.swRef*0.995+m.sw*0.005)}}
+    let raw=useFront?-m.syAvg/L.swRef:m.sig;if(raw==null){L.msg='צריך לראות את '+(E.sig==='leg'?'המותניים, הברכיים והרגליים':'הכתפיים והידיים');L.cls='bad';return}
+    if(!useFront&&(E.sig==='arm'||E.sig==='pull')){L.sMax=Math.max((L.sMax||raw)*0.9985,raw);raw=raw/L.sMax}  // 1 = arms straight, as you stand right now
+    L.smooth=L.smooth==null?raw:L.smooth*0.6+raw*0.4;const a=L.smooth,R=0.2;L.dbg=`${useFront||m.front?'מלפנים':'מהצד'} · עומק ${Math.max(0,Math.min(100,Math.round(useFront?(L.hiV!=null?(L.hiV-a)/0.4*100:0):(1-a)*100)))}%`;const ang_=useFront?(m.elbowAvg??999):(E.joint==='elbow'&&m.elbowAvg!=null&&m.front?m.elbowAvg:m[E.joint]);
     if(!L.ph){L.ph='top';L.hiV=a;L.loV=a}
     if(!L.rep)L.rep={t0:t,min:999,lineMin:999};
     if(m.ys){const R_=L.rep.rng||(L.rep.rng={});for(const k in m.ys){const y=m.ys[k];if(y==null)continue;const r=R_[k]||(R_[k]=[y,y]);if(y<r[0])r[0]=y;if(y>r[1])r[1]=y}}
     if(L.ph==='top'){if(a>=L.hiV){L.hiV=a;L.rep={t0:t,min:999,lineMin:999}}
       if(a<L.hiV-R){L.ph='bottom';L.loV=a;L.downT=t;L.formBad=false;L.formTip=false}}
     else{if(a<L.loV){L.loV=a;if(t-L.snapT>150){L.snapReq='rep';L.snapT=t}}
-      L.rep.min=Math.min(L.rep.min,ang_);if(m.chin)L.rep.chin=true;if(!m.front)L.rep.lineMin=Math.min(L.rep.lineMin,m.line);
-      if(E.line&&!m.front){if(m.line<140)L.formBad=true;else if(m.line<158)L.formTip=true}
-      if(a>=L.loV+Math.max(R,0.7*(L.hiV-L.loV))&&t-L.downT>300){L.ph='top';L.hiV=a;const full=E.sig==='pull'?(L.rep.chin||L.loV<=0.2):L.loV<=E.full;const real=realRep(E,L.rep.rng||{},m);
-        if(!real){L.rep=null;L.msg=`זה לא נראה כמו ${E.name}. ${E.tip}`;L.cls='bad'}
+      L.rep.min=Math.min(L.rep.min,ang_);if(m.chin)L.rep.chin=true;if(!m.front&&!useFront)L.rep.lineMin=Math.min(L.rep.lineMin,m.line);
+      if(E.line&&!m.front&&!useFront){if(m.line<140)L.formBad=true;else if(m.line<158)L.formTip=true}
+      if(a>=L.loV+Math.max(R,0.7*(L.hiV-L.loV))&&t-L.downT>300){const drop=L.hiV-L.loV;L.ph='top';L.hiV=a;const full=E.sig==='pull'?(L.rep.chin||L.loV<=0.2):useFront?(drop>=0.4||L.rep.min<=100):(L.loV<=E.full||(E.joint==='elbow'&&L.rep.min<=100));const real=realRep(E,L.rep.rng||{},{...m,front:useFront||m.front,wyLast:L.wyLast});
+        if(!real){L.rep=null;L.msg=useFront&&L.wyLast==null?'לא רואה את הידיים. הרחק את הטלפון קצת, שהידיים על הרצפה ייכנסו לתמונה':`זה לא נראה כמו ${E.name}. ${E.tip}`;L.cls='bad'}
         else if(!full){L.bad++;repEnd(L,t,false,E.sig==='pull'?'הסנטר לא עבר את המוט':'חצי חזרה');note(E.sig==='pull'?'סנטר מעל המוט בכל חזרה':E.sig==='leg'?'רד עמוק יותר':'רד עמוק יותר, טווח מלא');L.msg=E.sig==='pull'?'עוד קצת! סנטר מעל המוט':'חצי חזרה: רד עמוק יותר';L.cls='bad'}
         else if(L.formBad){L.bad++;repEnd(L,t,false,'גוף לא ישר');note('גוף ישר לאורך כל החזרה');L.msg='✗ הגוף לא היה ישר';L.cls='bad'}
         else if(L.formTip){L.reps++;repEnd(L,t,true,'נספרה, הגוף לא לגמרי ישר');L.tips['שמור על גוף ישר יותר']=(L.tips['שמור על גוף ישר יותר']||0)+1;L.msg='✓ נספרה · נסה גוף ישר יותר';L.cls='warn'}
         else{L.reps++;repEnd(L,t,true);L.msg='✓ חזרה טובה';L.cls='good'}}}
-    if(L.ph==='bottom'&&E.line&&!m.front&&m.line<140){L.msg='יישר את הגוף!';L.cls='bad'}
+    if(L.ph==='bottom'&&E.line&&!m.front&&!useFront&&m.line<140){L.msg='יישר את הגוף!';L.cls='bad'}
     return}
   if(E.kind==='pull'){const a=m.elbow;L.smooth=L.smooth==null?a:L.smooth*0.6+a*0.4;
     if(!L.rep)L.rep={t0:t,min:999,lineMin:999};if(L.smooth<L.rep.min-2){L.rep.min=L.smooth;if(t-L.snapT>150){L.snapReq='rep';L.snapT=t}}L.rep.lineMin=Math.min(L.rep.lineMin,m.line??180);
@@ -1436,7 +1445,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='emai
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='customIn'||e.target.id==='areaIn')){e.preventDefault();const id=e.target.id;(id==='areaIn'?addArea:addCustom)(e.target.value);save();render();setTimeout(()=>$('#'+id)?.focus(),0)}});
 render();
 /* ---------- updates: when a new version is published, show it and load it ---------- */
-const APP_VER='20261102220552';
+const APP_VER='20261102221658';
 function updScreen(html){let d=$('#upd');if(!d){d=document.createElement('div');d.id='upd';d.className='upd';document.body.append(d)}d.innerHTML=`<div class="upd-box" dir="rtl" lang="he">${html}</div>`}
 async function checkUpdate(){if(location.protocol!=='https:'||LIVE)return;let j;try{j=await (await fetch('version.json?t='+Date.now(),{cache:'no-store'})).json()}catch(e){return}
   if(!j?.ver||j.ver===APP_VER)return;const key='upd-'+j.ver;let n=0;try{n=+sessionStorage.getItem(key)||0;sessionStorage.setItem(key,n+1)}catch(e){n=9}
