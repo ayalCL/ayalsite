@@ -1,7 +1,7 @@
 // Offline support for the home-screen app.
 // The page itself is fetched network-first, so a new version shows up on the next open;
 // the cached copy is only used when there is no connection.
-const CACHE_NAME = 'life-coach-v3';
+const CACHE_NAME = 'life-coach-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -30,7 +30,10 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   // The sign-in library is a pinned version that never changes: keep it on the phone.
-  if (url.hostname === 'cdn.jsdelivr.net' && url.pathname.includes('@supabase/supabase-js@')) {
+  // Pinned libraries and the pose model never change: keep them on the phone.
+  const pinned = (url.hostname === 'cdn.jsdelivr.net' && /@supabase\/supabase-js@|@mediapipe\/tasks-vision@/.test(url.pathname))
+    || (url.hostname === 'storage.googleapis.com' && url.pathname.startsWith('/mediapipe-models/'));
+  if (pinned) {
     event.respondWith(
       caches.match(req).then((cached) => cached || fetch(req).then((res) => {
         const copy = res.clone();
