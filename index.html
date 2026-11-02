@@ -43,6 +43,27 @@ body{margin:0;font-size:14px;-webkit-text-size-adjust:100%}
 img{max-width:100%}
 [hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+body.has-bg{background:var(--bgimg) fixed;background-size:cover}
+body.has-bg .onbg,body.has-bg .onbg .muted,body.has-bg .onbg .eyebrow,body.has-bg .onbg .sync{color:#fff;text-shadow:0 1px 10px rgba(0,0,0,.45)}
+.av{position:relative;width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--surface-2);color:var(--ink);font-weight:800;border:0;padding:0;overflow:visible}
+.av img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.av.big{width:112px;height:112px;font-size:40px}
+.av.f-silver{box-shadow:0 0 0 3px #d9dde3,0 0 0 5px #8b939c}
+.av.f-gold{box-shadow:0 0 0 3px #ffd56a,0 0 0 6px #c9901a,0 0 14px rgba(255,190,60,.6)}
+.av.f-diamond{box-shadow:0 0 0 3px #bdf3ff,0 0 0 6px #5fb8ff,0 0 18px rgba(120,220,255,.85)}
+.av .bdg{position:absolute;bottom:-4px;left:-6px;font-size:16px;line-height:1;background:var(--surface);border-radius:999px;padding:2px 4px;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.av.big .bdg{font-size:26px;bottom:-2px;left:-4px}
+.streak{display:inline-flex;align-items:center;gap:4px;font-weight:800;background:var(--surface);border-radius:999px;padding:6px 12px;font-size:15px;border:0}
+.streak.cold{opacity:.65}
+.rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rw{border:2px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;font-size:12px;min-height:92px}
+.rw .ic{font-size:28px;line-height:1}
+.rw.locked{opacity:.45;filter:grayscale(1)}
+.rw[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.rw .sw{width:100%;height:28px;border-radius:8px}
+.celebrate{text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px 0}
+.celebrate .ic{font-size:72px;line-height:1}
+@media (prefers-reduced-motion:no-preference){.celebrate .ic{animation:pop .6s cubic-bezier(.2,1.6,.4,1)}@keyframes pop{from{transform:scale(.2) rotate(-20deg);opacity:0}}}
 button,input,textarea,select{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -243,7 +264,7 @@ const today=()=>new Date().toISOString().slice(0,10);
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 function fresh(){return{stage:'login',name:'',sports:[],first:'',checkin:'19:00',t0:null,onbSecs:null,onbStep:0,chat:[],hist:{},injuries:[],reports:[],energy:{},done:{},tab:'home',psport:null,ex:null,
   email:'',lang:'he',custom:[],goalChips:[],goals:'',level:'',days:3,minutes:60,when:'',quit:[],past:'',
-  metrics:{},steps:{},stepGoal:8000,meals:{},kcalGoal:2400,areas:[],customAreas:[],focus:'',bed:'23:30',wake:'07:00',screenNow:5,screenGoal:3,studyWhat:'',newLang:'',langLevel:''}}
+  metrics:{},avatar:'',look:{bg:'',frame:'',badge:''},bestStreak:0,seenRewards:[],steps:{},stepGoal:8000,meals:{},kcalGoal:2400,areas:[],customAreas:[],focus:'',bed:'23:30',wake:'07:00',screenNow:5,screenGoal:3,studyWhat:'',newLang:'',langLevel:''}}
 let S;try{S=Object.assign(fresh(),JSON.parse(localStorage.getItem(KEY))||{})}catch(e){S=fresh()}
 function makeCustom(name){return{name,sub:'התחום שלך',custom:true,
   plan:[['חימום','10 דק׳: הדרגתי, לפי התחום'],[`תרגול טכניקה: ${name}`,'20 דק׳ ממוקדות בדבר אחד שאתה רוצה לשפר'],['עבודה בעצימות','15-20 דק׳ לפי היכולת שלך'],['שחרור ומתיחות','8 דק׳']],
@@ -425,7 +446,7 @@ function installView(){
    <div class="banner">בכניסה הראשונה מהאייקון, התחבר עם <b>הקוד</b> שמגיע במייל.</div>
    <div style="text-align:center;font-size:30px;color:var(--accent);margin-top:4px" aria-hidden="true">↓</div>`}
 function render(){
-  const app=$('#app');
+  const app=$('#app');try{applyLook()}catch(e){}
   $('#nav').classList.toggle('hidden',S.stage!=='app');
   $('#composer').classList.toggle('hidden',!(S.stage==='app'&&S.tab==='coach'));
   document.querySelectorAll('.nav [data-tab]').forEach(b=>b.setAttribute('aria-current',b.dataset.tab===S.tab?'page':'false'));
@@ -440,7 +461,7 @@ function render(){
 }
 let clockT=null;
 function clock(){if((S.stage==='login'||S.stage==='onb')&&!S.t0){S.t0=Date.now()}}
-function topBar(){return `<div class="top"><div class="brand">Personal <b>Life</b> Coach</div><div class="row"><span class="ai"><i></i><span></span></span><button class="chip small" data-act="reset">איפוס</button>${USER?'<button class="chip small" data-act="logout">יציאה</button>':''}</div></div><div class="row between"><div class="sync" data-s="${SYNC}">${syncText()}</div>${S.email?`<div class="small muted" dir="ltr" style="margin:-8px 0 12px;overflow-wrap:anywhere">${esc(S.email)}</div>`:''}</div>`}
+function topBar(){const st=streakInfo();return `<div class="top onbg"><div class="row" style="gap:10px"><button class="av-btn" data-act="profile" aria-label="הפרופיל שלי" style="background:none;border:0;padding:0">${avatarHtml(false)}</button><button class="streak ${st.doneToday?'':'cold'}" data-act="profile" aria-label="רצף של ${st.cur} ימים">🔥 <span class="num">${st.cur}</span></button></div><div class="brand">Personal <b>Life</b> Coach</div></div><div class="row between onbg"><div class="sync" data-s="${SYNC}">${syncText()}</div>${S.email?`<div class="small muted" dir="ltr" style="margin:-8px 0 12px;overflow-wrap:anywhere">${esc(S.email)}</div>`:''}</div>`}
 
 /* ---------- login & onboarding ---------- */
 function loginView(){
@@ -556,9 +577,10 @@ function planItems(){const lastR=S.reports[S.reports.length-1];
   return{items:goalPlan(),fromReport:false}}
 function reportOpen(){const n=new Date();const hm=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');return hm>=(S.checkin||'20:00')}
 function reportCard(){const doneToday=S.reports.some(r=>r.date===today());
-  if(doneToday)return `<section class="card"><div class="eyebrow">דיווח ערב</div><div class="row"><span class="tag ok">דיווחת היום ✓</span></div><p class="small muted">התוכנית של מחר כבר מוכנה. דיווחת ${S.reports.length} פעמים. עקביות היא כל הסוד.</p></section>`;
-  if(!reportOpen())return `<section class="card"><div class="eyebrow">דיווח ערב</div><p class="small muted">הדיווח ייפתח היום ב-<b class="num">${esc(S.checkin)}</b>. בינתיים, תתמקד בתוכנית.</p></section>`;
-  return `<section class="card"><div class="eyebrow">דיווח ערב</div><h3>איך היה היום?</h3><p class="small muted">דקה אחת: מה עשית, מה היה קשה, במה הצלחת. המאמן בונה מזה את מחר.</p><button class="btn" data-act="report">לדווח</button>
+  if(doneToday)return `<section class="card"><div class="eyebrow">דיווח ערב</div><div class="row"><span class="tag ok">דיווחת היום ✓</span><span class="tag">🔥 ${streakInfo().cur} ימים ברצף</span></div><p class="small muted">התוכנית של מחר כבר מוכנה. דיווחת ${S.reports.length} פעמים. עקביות היא כל הסוד.</p></section>`;
+  const st=streakInfo();const keep=st.cur?`<p class="small"><b>🔥 ${st.cur} ימים ברצף.</b> דווח היום כדי לא לאבד אותו.</p>`:'<p class="small">כל דיווח ערב מוסיף יום לרצף 🔥 ופותח פרסים.</p>';
+  if(!reportOpen())return `<section class="card"><div class="eyebrow">דיווח ערב</div><p class="small muted">הדיווח ייפתח היום ב-<b class="num">${esc(S.checkin)}</b>. בינתיים, תתמקד בתוכנית.</p>${keep}</section>`;
+  return `<section class="card"><div class="eyebrow">דיווח ערב</div><h3>איך היה היום?</h3><p class="small muted">דקה אחת: מה עשית, מה היה קשה, במה הצלחת. המאמן בונה מזה את מחר.</p>${keep}<button class="btn" data-act="report">לדווח</button>
    ${S.reports.length?`<p class="small muted">דיווחת ${S.reports.length} פעמים. עקביות היא כל הסוד.</p>`:''}</section>`}
 function taskRow(t,d,i,done){const P=((S.proof||{})[today()]||{})[i];const busy=PROOF_BUSY===i;
   const mark=done[i]?'<span class="tick" aria-label="בוצע">✓</span>':'<span class="tick off" aria-hidden="true"></span>';
@@ -599,6 +621,62 @@ ${LANGLINE()} החזר רק JSON: {"done":true,"feedback":"משפט אחד קצ�
   P[i]={ok,thumb:thumbs[0]||null,feedback:ok?String(r.feedback||'כל הכבוד!'):String(r.missing||r.feedback||'לא רואים בתמונה את המשימה. נסה לצלם שוב.')};
   if(ok){const d=S.done[today()]||(S.done[today()]={});d[i]=true}
   PROOF_BUSY=-1;save();render();toast(ok?'המשימה סומנה כבוצעה ✓':'המאמן לא הצליח לראות שהמשימה בוצעה')}
+/* ---------- streak (one evening report a day) and rewards ---------- */
+const REWARDS=[
+ {at:3,type:'bg',id:'sunset',name:'רקע שקיעה',icon:'🌅'},
+ {at:7,type:'frame',id:'silver',name:'מסגרת כסף',icon:'🥈'},
+ {at:10,type:'badge',id:'steady',name:'תג "מתמיד"',icon:'💪'},
+ {at:14,type:'bg',id:'night',name:'רקע לילה',icon:'🌌'},
+ {at:21,type:'frame',id:'gold',name:'מסגרת זהב',icon:'🥇'},
+ {at:30,type:'bg',id:'fire',name:'רקע אש',icon:'🔥'},
+ {at:30,type:'badge',id:'fire30',name:'תג 30 יום',icon:'🔥'},
+ {at:50,type:'frame',id:'diamond',name:'מסגרת יהלום',icon:'💎'},
+ {at:100,type:'bg',id:'legend',name:'רקע אגדי',icon:'👑'},
+ {at:100,type:'badge',id:'crown',name:'תג אגדה',icon:'👑'}];
+const BGS={sunset:'linear-gradient(165deg,#ffb36b 0%,#ff6a5c 42%,#8a3f9e 100%)',
+ night:'radial-gradient(circle at 20% 15%,rgba(255,255,255,.9) 0 1px,transparent 2px),radial-gradient(circle at 70% 30%,rgba(255,255,255,.8) 0 1px,transparent 2px),radial-gradient(circle at 40% 60%,rgba(255,255,255,.7) 0 1px,transparent 2px),radial-gradient(circle at 85% 75%,rgba(255,255,255,.8) 0 1px,transparent 2px),linear-gradient(180deg,#0b1030 0%,#23215c 55%,#4b2c7a 100%)',
+ fire:'radial-gradient(ellipse at 50% 120%,#ffd23f 0%,#ff7a1a 30%,#d62a12 55%,#3a0b0b 85%)',
+ legend:'conic-gradient(from 200deg at 50% 40%,#1b1036,#5b2a86,#d4a017,#5b2a86,#1b1036)'};
+const BADGES={steady:'💪',fire30:'🔥',crown:'👑'};
+function streakInfo(){const days=new Set((S.reports||[]).map(r=>r.date));const iso=d=>d.toISOString().slice(0,10);
+  let t=new Date();const doneToday=days.has(iso(t));if(!doneToday)t=new Date(t.getTime()-864e5);
+  let cur=0;while(days.has(iso(t))){cur++;t=new Date(t.getTime()-864e5)}
+  return{cur,doneToday,best:Math.max(cur,S.bestStreak||0)}}
+function unlocked(){const best=streakInfo().best;return REWARDS.filter(r=>best>=r.at)}
+function nextReward(){const st=streakInfo();return REWARDS.find(r=>r.at>st.best)}
+function applyLook(){const bg=S.look?.bg&&BGS[S.look.bg]&&unlocked().some(r=>r.id===S.look.bg)?BGS[S.look.bg]:'';
+  document.body.classList.toggle('has-bg',!!bg);if(bg)document.body.style.setProperty('--bgimg',bg);else document.body.style.removeProperty('--bgimg')}
+function avatarHtml(big){const L=S.look||{};const fr=L.frame&&unlocked().some(r=>r.id===L.frame)?' f-'+L.frame:'';
+  const bd=L.badge&&BADGES[L.badge]&&unlocked().some(r=>r.id===L.badge)?`<span class="bdg">${BADGES[L.badge]}</span>`:'';
+  const inner=S.avatar?`<img src="${S.avatar}" alt="תמונת פרופיל">`:esc((S.name||S.email||'?').trim().charAt(0).toUpperCase()||'?');
+  return `<span class="av${big?' big':''}${fr}">${inner}${bd}</span>`}
+function checkNewRewards(){const got=unlocked().filter(r=>!(S.seenRewards||[]).includes(r.type+':'+r.id));if(!got.length)return;
+  S.seenRewards=[...(S.seenRewards||[]),...got.map(r=>r.type+':'+r.id)];
+  for(const r of got){if(!S.look[r.type])S.look[r.type]=r.id}
+  save();applyLook();
+  sheet(`<div class="celebrate"><div class="ic">${got[0].icon}</div><h2 class="disp" style="font-size:40px">פתחת פרס!</h2>
+   <p>${got.map(r=>`<b>${esc(r.name)}</b>`).join(' ו')} · ${streakInfo().cur} ימים ברצף 🔥</p>
+   <p class="small muted">הפרס כבר הופעל. אפשר להחליף בכל רגע בפרופיל.</p>
+   <button class="btn block" data-act="close">יאללה!</button></div>`)}
+async function resizeAvatar(file){const u=URL.createObjectURL(file);try{const im=new Image();im.src=u;await im.decode();
+  const n=256,c=document.createElement('canvas');c.width=n;c.height=n;const x=c.getContext('2d');const sz=Math.min(im.width,im.height);
+  x.drawImage(im,(im.width-sz)/2,(im.height-sz)/2,sz,sz,0,0,n,n);return c.toDataURL('image/jpeg',.82)}finally{URL.revokeObjectURL(u)}}
+function openProfile(){const st=streakInfo();const nx=nextReward();const U=unlocked();
+  const sel=(type,id)=>S.look?.[type]===id;
+  const tile=r=>{const open=U.includes(r);const sw=r.type==='bg'?`<span class="sw" style="background:${BGS[r.id]}"></span>`:`<span class="ic">${r.icon}</span>`;
+    return `<button class="rw ${open?'':'locked'}" type="button" ${open?`data-act="look" data-type="${r.type}" data-id="${r.id}" aria-pressed="${sel(r.type,r.id)}"`:'disabled'}>${sw}<span>${esc(r.name)}</span><span class="small muted">${open?(sel(r.type,r.id)?'פעיל':'לחץ להפעלה'):'🔒 '+r.at+' ימים'}</span></button>`};
+  sheet(`<div class="row between"><div class="eyebrow">הפרופיל שלי</div><button class="x" data-act="close" aria-label="סגור">×</button></div>
+   <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+    <label for="avatarIn" style="cursor:pointer">${avatarHtml(true)}</label><input type="file" id="avatarIn" accept="image/*" class="hidden">
+    <label for="avatarIn" class="chip small" style="cursor:pointer">${S.avatar?'החלף תמונה':'📷 הוסף תמונת פרופיל'}</label>
+    <div class="t" style="font-size:20px">${esc(S.name||'')}</div></div>
+   <div class="card"><div class="row between"><span class="disp" style="font-size:44px">🔥 ${st.cur}</span><span class="small muted">הכי ארוך: ${st.best} ימים</span></div>
+    <p class="small">${st.doneToday?'דיווחת היום ✓ הרצף ממשיך.':'כדי לשמור על הרצף, מלא היום את דיווח הערב.'}</p>
+    ${nx?`<div class="small">עוד <b>${nx.at-st.best}</b> ימים: ${nx.icon} ${esc(nx.name)}</div><div class="bar"><i style="width:${Math.round(st.best/nx.at*100)}%"></i></div>`:'<div class="small">פתחת את כל הפרסים. אגדה! 👑</div>'}</div>
+   <div class="eyebrow">רקעים</div><div class="rgrid">${REWARDS.filter(r=>r.type==='bg').map(tile).join('')}<button class="rw" type="button" data-act="look" data-type="bg" data-id="" aria-pressed="${!S.look?.bg}"><span class="sw" style="background:var(--bg);border:1px solid var(--line)"></span><span>רגיל</span></button></div>
+   <div class="eyebrow">מסגרות</div><div class="rgrid">${REWARDS.filter(r=>r.type==='frame').map(tile).join('')}</div>
+   <div class="eyebrow">תגים</div><div class="rgrid">${REWARDS.filter(r=>r.type==='badge').map(tile).join('')}</div>
+   <div class="row" style="justify-content:center;margin-top:6px"><button class="chip small" data-act="reset">איפוס</button>${USER?'<button class="chip small" data-act="logout">יציאה</button>':''}</div>`)}
 function energyLine(){const e=S.energy[today()];
   if(e==='low')return 'אנרגיה נמוכה זה מידע, לא כישלון. היום עושים רק את 2 המשימות הראשונות בעצימות של 70%. עקביות לפני שלמות.';
   if(e==='mid')return 'יום רגיל. עושים את התוכנית כמו שהיא, ובסוף מדווחים מה עבד.';
@@ -608,7 +686,8 @@ function homeView(){const h=new Date().getHours();const hi=h<12?'בוקר טוב
   const {items,fromReport,fromAI,note}=planItems();const done=S.done[today()]||{};const inj=activeInj();
   const nDone=items.filter((_,i)=>done[i]).length;
   return `<div class="stack">
-  <div><div class="eyebrow">${new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'})}</div><h1 class="disp" style="font-size:48px">${hi}${S.name?', '+esc(S.name):''}</h1></div>
+  <div class="onbg"><div class="eyebrow">${new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'})}</div><h1 class="disp" style="font-size:48px">${hi}${S.name?', '+esc(S.name):''}</h1></div>
+  ${S.avatar?'':`<section class="card"><div class="row" style="gap:12px;flex-wrap:nowrap">${avatarHtml(false)}<div style="flex:1;min-width:0"><div class="t">הוסף תמונת פרופיל</div><div class="small muted">ככה החברים יזהו אותך, והמסגרות שתרוויח יופיעו עליה.</div></div></div><label for="avatarIn" class="btn ghost block" style="cursor:pointer">📷 בחר תמונה</label><input type="file" id="avatarIn" accept="image/*" class="hidden"></section>`}
   <section class="card"><div class="row between"><div class="eyebrow">CHECK-IN · <span class="num">${esc(S.checkin)}</span></div></div>
    <div class="row">${[['low','אנרגיה נמוכה'],['mid','רגיל'],['high','מלא אנרגיה']].map(([k,l])=>`<button class="chip" data-act="energy" data-k="${k}" aria-pressed="${S.energy[today()]===k}">${l}</button>`).join('')}</div>
    <div class="coachline">${energyLine()}</div></section>
@@ -697,11 +776,11 @@ function metricCard(key,title,m){const E=(S.metrics||{})[key]||[];const last=E[E
    ${input}</section>`}
 function areaCard(a){const A=AREAS[a];return metricCard(a,`${A.name} · ${A.metric.label}`,A.metric)}
 function progressView(){const areaCards=nonSport().map(areaCard).join('');
-  if(!hasSport())return `<div class="stack"><h1 class="disp" style="font-size:48px">התקדמות</h1>${areaCards}</div>`;
+  if(!hasSport())return `<div class="stack"><h1 class="disp onbg" style="font-size:48px">התקדמות</h1>${areaCards}</div>`;
   if(!S.first||!SPORTS[S.first])S.first=S.sports[0];
   if(!S.psport||!S.sports.includes(S.psport))S.psport=S.first;const sp=SPORTS[S.psport];if(!S.ex||!sp.ex.includes(S.ex))S.ex=sp.ex[0];
   const m=sp.metric;const k=S.psport+'|'+S.ex;const H=S.hist[k]||[];const latest=H[H.length-1];
-  return `<div class="stack"><h1 class="disp" style="font-size:48px">התקדמות</h1>${areaCards}
+  return `<div class="stack"><h1 class="disp onbg" style="font-size:48px">התקדמות</h1>${areaCards}
   <div class="eyebrow" style="margin-top:6px">ספורט</div>
   <div class="tabs">${S.sports.map(s=>`<button class="chip" data-act="psport" data-k="${s}" aria-pressed="${s===S.psport}">${SPORTS[s].name}</button>`).join('')}</div>
   ${metricCard(S.psport,m.label,m)}
@@ -859,10 +938,10 @@ async function sendReport(){const g=k=>$('#r_'+k).value.trim();const rep={date:t
 דיווח הערב: עשה: ${rep.did}. היה קשה: ${rep.hard}. הצליח: ${rep.win}. רוצה להתמקד מחר: ${rep.focus}.
 המטרות שבחר: ${[...S.goalChips,...freeGoals()].join(', ')||'לא נבחרו'}. בנה תוכנית למחר עם משימה ספציפית לכל מטרה, שמתחשבת במה שעבד ומה לא (כישלון = מידע). החזר רק JSON בעברית: {"summary":"משפט אחד על היום","win":"חיזוק קצר וכן","tomorrow":[{"title":"משימה","detail":"מינון / פירוט"}],"note":"משפט מנחה אחד"}. 3-5 משימות, כולל שינה.`,{modelTier:'default'})}catch(e){toast(aiFail(e))}}
   if(!r){await wait(800);r={summary:'יום שנספר. עשית חלק מהתוכנית ודיווחת, וזה העיקר.',win:rep.win?`הצלחת: ${rep.win}. זה בדיוק מה שבונה עקביות.`:'דיווחת, וזה כבר צעד.',tomorrow:[...(SPORTS[S.first].plan.slice(0,2).map(([t,d])=>({title:t,detail:d}))),...(rep.focus?[{title:'פוקוס: '+rep.focus,detail:'15 דק׳ ממוקדות בתחילת האימון'}]:[]),{title:'שינה',detail:'מסך כבוי חצי שעה לפני'}],note:'מחר: קצת פחות, אבל עד הסוף.',demo:true}}
-  rep.tomorrow=r.tomorrow||[];rep.summary=r.summary;S.reports.push(rep);save();
+  rep.tomorrow=r.tomorrow||[];rep.summary=r.summary;S.reports.push(rep);S.bestStreak=Math.max(S.bestStreak||0,streakInfo().cur);save();
   out.innerHTML=`<div class="card">${r.demo?'<span class="tag demo" style="align-self:flex-start">מצב הדגמה</span>':''}<div class="t">${esc(r.summary)}</div><div class="coachline">${esc(r.win)}</div>
    <div class="eyebrow">מחר</div><ul class="clean">${rep.tomorrow.map(x=>`<li><b>${esc(x.title)}</b>: ${esc(x.detail)}</li>`).join('')}</ul><div class="small muted">${esc(r.note)}</div></div>
-   <button class="btn block ghost" data-act="close">סגור</button>`;render()}
+   <button class="btn block ghost" data-act="closereport">סגור</button>`;render()}
 
 /* food */
 function openFood(){sheet(`${head('סריקת אוכל','מה אכלת?')}
@@ -916,6 +995,9 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   case'report':openReport();break;case'sendreport':sendReport();break;
   case'food':openFood();break;
   case'foodtext':scanFood(null);break;
+  case'profile':openProfile();break;
+  case'look':{const ty=t.dataset.type,id=t.dataset.id;S.look=S.look||{};S.look[ty]=id;save();applyLook();render();openProfile();break}
+  case'closereport':closeSheet();checkNewRewards();break;
   case'talk':startTalk(+t.dataset.i);break;
   case'whatok':{const v=($('#whatIn')?.value||'').trim();const r=WHAT_RES;WHAT_RES=null;closeSheet();r&&r(v);break}
   case'whatcancel':{const r=WHAT_RES;WHAT_RES=null;closeSheet();r&&r(null);break}
@@ -945,6 +1027,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   }});
 document.addEventListener('change',e=>{const t=e.target;
   if(t.id==='proofIn'&&t.files[0]&&PROOF_I>=0){const f=t.files[0];checkProof(f,PROOF_I)}
+  if(t.id==='avatarIn'&&t.files[0]){const f=t.files[0];resizeAvatar(f).then(d=>{S.avatar=d;save();render();if($('.sheet'))openProfile();toast('התמונה נשמרה')}).catch(()=>toast('לא הצלחתי לפתוח את התמונה. נסה תמונה אחרת'))}
   if(t.dataset.act==='flag'){const v=t.dataset.v;IJ.flags=t.checked?[...IJ.flags,v]:IJ.flags.filter(x=>x!==v)}
   if(t.id==='vidIn'&&t.files[0])analyze(t.files[0]);
   if(t.id==='foodIn'&&t.files[0])scanFood(t.files[0]);
