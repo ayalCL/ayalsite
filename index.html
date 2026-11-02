@@ -62,7 +62,7 @@ body.has-bg .onbg,body.has-bg .onbg .muted,body.has-bg .onbg .eyebrow,body.has-b
 .rw[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
 .rw .sw{width:100%;height:28px;border-radius:8px}
 .live{position:fixed;inset:0;z-index:70;background:#000;color:#fff;overflow:hidden}
-.live video,.live canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.live video,.live canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .live.mirror video,.live.mirror canvas{transform:scaleX(-1)}
 .live-top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 10px max(12px,env(safe-area-inset-left,0px));background:linear-gradient(rgba(0,0,0,.55),transparent)}
 .live-top .x{background:rgba(255,255,255,.18);color:#fff}
@@ -71,6 +71,7 @@ body.has-bg .onbg,body.has-bg .onbg .muted,body.has-bg .onbg .eyebrow,body.has-b
 .live-hud{position:absolute;top:calc(64px + env(safe-area-inset-top,0px));inset-inline-start:max(14px,env(safe-area-inset-right,0px));text-shadow:0 2px 10px rgba(0,0,0,.7)}
 .live-big{font-family:var(--display);font-size:84px;font-weight:700;line-height:.9}
 .live-sub{font-size:14px;font-weight:700;opacity:.9}
+.live-msg.warn{background:rgba(214,150,20,.85)}
 .live-msg{position:absolute;left:12px;right:12px;bottom:calc(92px + env(safe-area-inset-bottom,0px));text-align:center;font-size:20px;font-weight:800;padding:10px 14px;border-radius:14px;background:rgba(0,0,0,.55)}
 .live-msg.good{background:rgba(29,122,76,.85)}
 .live-msg.bad{background:rgba(185,58,44,.85)}
@@ -706,12 +707,12 @@ function openProfile(){const st=streakInfo();const nx=nextReward();const U=unloc
    <div class="row" style="justify-content:center;margin-top:6px"><button class="chip small" data-act="reset">איפוס</button>${USER?'<button class="chip small" data-act="logout">יציאה</button>':''}</div>`)}
 /* ---------- live technique check: skeleton on the camera (MediaPipe pose) ---------- */
 const LIVE_EX={
- pushup:{name:'שכיבות סמיכה',kind:'reps',joint:'elbow',down:95,up:155,line:true,tip:'הנח את הטלפון על הרצפה, מהצד, שכל הגוף ייכנס',al:['שכיבות סמיכה','שכיבה','push up','pushup','push-up']},
+ pushup:{name:'שכיבות סמיכה',kind:'reps',joint:'elbow',down:105,up:155,line:true,tip:'הנח את הטלפון על הרצפה, מהצד, שכל הגוף ייכנס',al:['שכיבות סמיכה','שכיבה','push up','pushup','push-up']},
  pullup:{name:'מתח',kind:'pull',tip:'צלם מהצד או מלפנים, מהידיים על המוט ועד הרגליים',al:['מתח','pull up','pullup','pull-up','chin up','סנטר']},
- squat:{name:'סקוואט',kind:'reps',joint:'knee',down:100,up:160,depth:true,tip:'צלם מהצד, בגובה הברכיים, כל הגוף בפריים',al:['סקוואט','squat','כריעה']},
- bench:{name:'בנץ׳ פרס',kind:'reps',joint:'elbow',down:90,up:155,tip:'צלם מהצד של הספסל, שהידיים והמוט ייראו',al:['בנץ','בנץ׳','bench','לחיצת חזה']},
- dips:{name:'מקבילים',kind:'reps',joint:'elbow',down:95,up:155,tip:'צלם מהצד, כל הגוף בפריים',al:['מקבילים','dips','dip']},
- situp:{name:'כפיפות בטן',kind:'reps',joint:'hip',down:70,up:120,inverse:true,tip:'צלם מהצד, בגובה הרצפה',al:['כפיפות בטן','בטן','sit up','situp','crunch']},
+ squat:{name:'סקוואט',kind:'reps',joint:'knee',down:110,up:160,depth:true,tip:'צלם מהצד, בגובה הברכיים, כל הגוף בפריים',al:['סקוואט','squat','כריעה']},
+ bench:{name:'בנץ׳ פרס',kind:'reps',joint:'elbow',down:100,up:155,tip:'צלם מהצד של הספסל, שהידיים והמוט ייראו',al:['בנץ','בנץ׳','bench','לחיצת חזה']},
+ dips:{name:'מקבילים',kind:'reps',joint:'elbow',down:105,up:155,tip:'צלם מהצד, כל הגוף בפריים',al:['מקבילים','dips','dip']},
+ situp:{name:'כפיפות בטן',kind:'reps',joint:'hip',down:80,up:120,inverse:true,tip:'צלם מהצד, בגובה הרצפה',al:['כפיפות בטן','בטן','sit up','situp','crunch']},
  plank:{name:'פלאנק',kind:'hold',hold:'plank',tip:'צלם מהצד, בגובה הרצפה',al:['פלאנק','plank']},
  frontlever:{name:'פרונט לבר',kind:'hold',hold:'frontlever',tip:'צלם מהצד, מהמוט ועד הרגליים',al:['פרונט לבר','פרונט','front lever','frontlever','לבר']},
  tuckfl:{name:'טאק פרונט לבר',kind:'hold',hold:'tuckfl',tip:'צלם מהצד, מהמוט ועד הרגליים',al:['טאק פרונט','tuck front','טאק לבר']},
@@ -746,16 +747,20 @@ function liveMeasure(id,lm,ar){const E=LIVE_EX[id]||{kind:'general'};const sd=pi
   const need=E.kind==='general'?[S_,H]:[S_,El,W,H,K,A];const visible=need.every(q=>q.v>0.4);
   const elbow=ang(S_,El,W),knee=ang(H,K,A),hip=ang(S_,H,K),line=ang(S_,H,A),bodyTilt=tilt(S_,A);
   return{visible,elbow,knee,hip,line,bodyTilt,noseAboveWrist:N.y<W.y,wristAboveShoulder:W.y<S_.y,inverted:A.y<H.y&&H.y<S_.y,hipBelowKnee:H.y>=K.y-0.02,feetUp:A.y<lm[sd.w].y-0.02}}
-function holdCheck(kind,m){const issues=[];
-  if(kind==='plank'){if(m.line<160)issues.push(m.hip<160&&m.line<160?'אגן ישר! אל תשפיל או תרים את הישבן':'יישר את הגוף');if(m.elbow<150&&m.elbow>120)issues.push('ידיים ישרות')}
-  if(kind==='frontlever'||kind==='tuckfl'){if(!m.wristAboveShoulder)issues.push('תלה על המוט, ידיים מעל הכתפיים');if(m.elbow<150)issues.push('ידיים ישרות');
-    if(kind==='frontlever'&&m.line<160)issues.push('גוף ישר: אגן בקו עם הכתפיים והרגליים');if(m.bodyTilt>20)issues.push('הגוף צריך להיות מקביל לרצפה')}
-  if(kind==='planche'||kind==='tuckplanche'){if(m.elbow<150)issues.push('ידיים נעולות וישרות');if(kind==='planche'&&m.line<160)issues.push('גוף ישר מהכתפיים עד הרגליים');if(m.bodyTilt>25)issues.push('הישען יותר קדימה, הגוף מקביל לרצפה')}
-  if(kind==='lsit'){if(m.elbow<150)issues.push('ידיים ישרות');if(m.hip>115)issues.push('הרם את הרגליים גבוה יותר');if(m.knee<160)issues.push('רגליים ישרות')}
-  if(kind==='handstand'){if(!m.inverted)issues.push('עלה לעמידת ידיים');else{if(m.line<160)issues.push('גוף ישר, בלי קשת בגב');if(m.elbow<155)issues.push('ידיים נעולות')}}
-  return issues}
+// stop = the position is lost (clock stops). tip = still counts, but here is what to improve.
+function holdCheck(kind,m){const stop=[],tip=[];
+  if(kind==='plank'){if(m.line<140)stop.push('האגן ירד מדי, יישר את הגוף');else if(m.line<162)tip.push('יישר עוד קצת את הגוף')}
+  if(kind==='frontlever'||kind==='tuckfl'){if(!m.wristAboveShoulder)stop.push('תלה על המוט, ידיים מעל הכתפיים');if(m.bodyTilt>40)stop.push('הגוף ירד, הרם אותו למקביל לרצפה');else if(m.bodyTilt>20)tip.push('עוד קצת למעלה, מקביל לרצפה');
+    if(m.elbow<130)stop.push('ידיים ישרות');else if(m.elbow<155)tip.push('נסה לנעול את המרפקים');
+    if(kind==='frontlever'){if(m.line<140)stop.push('האגן נפל, גוף בקו אחד');else if(m.line<160)tip.push('הרם קצת את האגן לקו אחד')}}
+  if(kind==='planche'||kind==='tuckplanche'){if(m.elbow<130)stop.push('ידיים נעולות וישרות');else if(m.elbow<155)tip.push('נסה לנעול את המרפקים');if(m.bodyTilt>40)stop.push('הישען קדימה, הגוף מקביל לרצפה');else if(m.bodyTilt>25)tip.push('עוד קצת קדימה');
+    if(kind==='planche'){if(m.line<140)stop.push('גוף ישר מהכתפיים עד הרגליים');else if(m.line<160)tip.push('יישר קצת את הגוף')}}
+  if(kind==='lsit'){if(m.elbow<130)stop.push('ידיים ישרות');else if(m.elbow<150)tip.push('נסה לנעול את המרפקים');if(m.hip>140)stop.push('הרגליים ירדו, הרם אותן');else if(m.hip>110)tip.push('נסה להרים את הרגליים גבוה יותר');
+    if(m.knee<110)stop.push('יישר את הרגליים');else if(m.knee<160)tip.push('נסה ליישר את הברכיים')}
+  if(kind==='handstand'){if(!m.inverted)stop.push('עלה לעמידת ידיים');else{if(m.elbow<135)stop.push('ידיים נעולות');else if(m.elbow<155)tip.push('נסה לנעול את המרפקים');if(m.line<140)stop.push('הגוף נשבר, יישר אותו');else if(m.line<160)tip.push('פחות קשת בגב')}}
+  return{stop,tip}}
 let LIVE=null;
-function liveNew(id,name){return{id,name,facing:'user',running:false,reps:0,bad:0,state:'up',min:999,max:0,partial:false,holdMs:0,bestHold:0,cur:0,lastT:0,issues:{},smooth:null,msg:'',msgT:0,frames:0,seen:0,log:[],rep:null,attempts:[],hsnaps:[],snapT:0}}
+function liveNew(id,name){return{id,name,facing:'user',running:false,reps:0,bad:0,state:'up',min:999,max:0,partial:false,holdMs:0,bestHold:0,cur:0,lastT:0,issues:{},smooth:null,msg:'',msgT:0,frames:0,seen:0,log:[],rep:null,attempts:[],hsnaps:[],snapT:0,cleanMs:0,lostMs:0,tips:{},sm:{}}}
 // one finished rep: how deep, how straight, how long, and a picture of its bottom
 function repEnd(L,t,ok,why){const r=L.rep;if(r)L.log.push({ok,why:why||'',min:Math.round(r.min),line:Math.round(r.lineMin),dur:Math.round((t-r.t0)/100)/10,snap:r.snap||null});L.rep=null}
 function liveStep(L,m,t){const E=LIVE_EX[L.id]||{kind:'general'};L.frames++;if(!m.visible){L.msg='צריך לראות את כל הגוף בפריים';L.cls='bad';L.lastT=t;return}L.seen++;
@@ -765,15 +770,16 @@ function liveStep(L,m,t){const E=LIVE_EX[L.id]||{kind:'general'};L.frames++;if(!
     if(!L.rep)L.rep={t0:t,min:999,lineMin:180};if(a<L.rep.min-2){L.rep.min=a;if(t-L.snapT>150){L.snapReq='rep';L.snapT=t}}L.rep.lineMin=Math.min(L.rep.lineMin,m.line);
     const lo=E.inverse?a<E.down:a<E.down, hi=E.inverse?a>E.up:a>E.up;
     if(L.state==='up'){L.min=Math.min(L.min,a);
-      if(lo){L.state='down';L.formBad=false}
+      if(lo){L.state='down';L.formBad=false;L.formTip=false}
       else if(hi&&L.min<E.up-30){L.bad++;repEnd(L,t,false,'חצי חזרה');note(E.joint==='knee'?'רד עמוק יותר':'רד עמוק יותר, טווח מלא');L.msg=E.joint==='knee'?'חצי חזרה: רד עמוק יותר':'חצי חזרה: רד עמוק יותר';L.cls='bad';L.min=999}
       else if(hi){L.min=999;L.rep={t0:t,min:999,lineMin:180}}}
-    else{if(E.line&&m.line<155){L.formBad=true}
+    else{if(E.line&&m.line<140)L.formBad=true;else if(E.line&&m.line<158)L.formTip=true;
       if(E.depth&&!m.hipBelowKnee&&a<E.down+5){}
       if(hi){L.state='up';L.min=999;
         if(L.formBad){L.bad++;repEnd(L,t,false,'גוף לא ישר');note('גוף ישר לאורך כל החזרה');L.msg='✗ הגוף לא היה ישר';L.cls='bad'}
+        else if(L.formTip){L.reps++;repEnd(L,t,true,'נספרה, הגוף לא לגמרי ישר');L.tips['שמור על גוף ישר יותר']=(L.tips['שמור על גוף ישר יותר']||0)+1;L.msg='✓ נספרה · נסה גוף ישר יותר';L.cls='warn'}
         else{L.reps++;repEnd(L,t,true);L.msg='✓ חזרה טובה';L.cls='good'}}}
-    if(L.state==='down'&&E.line&&m.line<155){L.msg='יישר את הגוף!';L.cls='bad'}
+    if(L.state==='down'&&E.line&&m.line<140){L.msg='יישר את הגוף!';L.cls='bad'}
     return}
   if(E.kind==='pull'){const a=m.elbow;L.smooth=L.smooth==null?a:L.smooth*0.6+a*0.4;
     if(!L.rep)L.rep={t0:t,min:999,lineMin:180};if(L.smooth<L.rep.min-2){L.rep.min=L.smooth;if(t-L.snapT>150){L.snapReq='rep';L.snapT=t}}L.rep.lineMin=Math.min(L.rep.lineMin,m.line??180);
@@ -784,10 +790,16 @@ function liveStep(L,m,t){const E=LIVE_EX[L.id]||{kind:'general'};L.frames++;if(!
     if(L.state==='up'&&L.near&&L.smooth>150){L.bad++;repEnd(L,t,false,'הסנטר לא עבר את המוט');note('סנטר מעל המוט בכל חזרה');L.near=false}
     else if(L.state==='up'&&!L.near&&L.smooth>150&&L.rep&&L.rep.min>150)L.rep={t0:t,min:999,lineMin:180}
     return}
-  if(E.kind==='hold'){const iss=holdCheck(E.hold,m);
-    if(t-L.snapT>800){L.snapReq=iss.length?'bad:'+iss[0]:'good';L.snapT=t}
-    if(!iss.length){L.cur+=dt;L.holdMs+=dt;L.bestHold=Math.max(L.bestHold,L.cur);L.msg='✓ מחזיק נכון';L.cls='good'}
-    else{if(L.cur>500){note(iss[0]);L.attempts.push({sec:Math.round(L.cur/100)/10,broke:iss[0],line:Math.round(m.line),elbow:Math.round(m.elbow),tilt:Math.round(m.bodyTilt)})}L.cur=0;L.msg=iss[0];L.cls='bad'}
+  if(E.kind==='hold'){ // smooth the angles so camera jitter does not break a hold
+    for(const k of ['line','elbow','knee','hip','bodyTilt'])L.sm[k]=L.sm[k]==null?m[k]:L.sm[k]*0.7+m[k]*0.3;const mm={...m,...L.sm};
+    const {stop,tip}=holdCheck(E.hold,mm);
+    if(t-L.snapT>800){L.snapReq=stop.length?'bad:'+stop[0]:tip.length?'bad:'+tip[0]:'good';L.snapT=t}
+    if(stop.length)L.lostMs+=dt;else L.lostMs=0;
+    if(!stop.length||(L.cur>0&&L.lostMs<600)){ // a short wobble does not end the hold
+      L.cur+=dt;L.holdMs+=dt;L.bestHold=Math.max(L.bestHold,L.cur);
+      if(!stop.length&&!tip.length){L.cleanMs+=dt;L.msg='✓ מחזיק נכון';L.cls='good'}
+      else{const x=stop[0]||tip[0];if(tip[0])L.tips[tip[0]]=(L.tips[tip[0]]||0)+dt;L.msg='✓ נספר · '+x;L.cls='warn'}}
+    else{if(L.cur>500){note(stop[0]);L.attempts.push({sec:Math.round(L.cur/100)/10,broke:stop[0],tips:Object.keys(L.tips),line:Math.round(mm.line),elbow:Math.round(mm.elbow),knee:Math.round(mm.knee),hip:Math.round(mm.hip),tilt:Math.round(mm.bodyTilt)})}L.cur=0;L.msg=stop[0];L.cls='bad'}
     return}
   if(t-L.snapT>1200){L.snapReq='general';L.snapT=t}
   L.msg='השלד עוקב אחריך. לחץ "סיימתי" כשתסיים.';L.cls=''}
@@ -808,18 +820,18 @@ function pickSnaps(L){const E=LIVE_EX[L.id]||{kind:'general'};const out=[];const
   return out}
 function liveStats(L){const E=LIVE_EX[L.id]||{kind:'general'};
   if(E.kind==='reps'||E.kind==='pull'){const j=E.kind==='pull'?'מרפק בנקודה העליונה':E.joint==='knee'?'ברך בנקודה התחתונה':E.joint==='hip'?'ירך':'מרפק בנקודה התחתונה';
-    return `מדידות מהשלד (זוויות במעלות, 180 = ישר; ירידה מלאה = פחות מ-${E.down||80}; קו גוף 180 = כתף-אגן-קרסול בקו ישר):\n`+(L.log.map((r,i)=>`חזרה ${i+1}: ${r.ok?'נספרה':'לא נספרה ('+r.why+')'}, זווית ${j}: ${r.min}°, קו גוף מינימלי: ${r.line}°, משך: ${r.dur} שנ׳`).join('\n')||'לא הושלמו חזרות')}
-  if(E.kind==='hold')return `ניסיונות החזקה (רק זמן בטכניקה נכונה נספר):\n`+(L.attempts.map((a,i)=>`ניסיון ${i+1}: ${a.sec} שנ׳, נשבר בגלל: ${a.broke} (קו גוף ${a.line}°, מרפק ${a.elbow}°, הטיית גוף מהאופק ${a.tilt}°)`).join('\n')||'אין ניסיון של יותר מחצי שנייה')+`\nהחזקה הכי ארוכה: ${(L.bestHold/1000).toFixed(1)} שנ׳`;
+    return `מדידות מהשלד (זוויות במעלות, 180 = ישר; ירידה מלאה = פחות מ-${E.down||80}; קו גוף 180 = כתף-אגן-קרסול בקו ישר):\n`+(L.log.map((r,i)=>`חזרה ${i+1}: ${r.ok?'נספרה':'לא נספרה ('+r.why+')'}${r.ok&&r.why?' ('+r.why+')':''}, זווית ${j}: ${r.min}°, קו גוף מינימלי: ${r.line}°, משך: ${r.dur} שנ׳`).join('\n')||'לא הושלמו חזרות')}
+  if(E.kind==='hold')return `ניסיונות החזקה (רק זמן בטכניקה נכונה נספר):\n`+(L.attempts.map((a,i)=>`ניסיון ${i+1}: ${a.sec} שנ׳, נשבר בגלל: ${a.broke}${a.tips?.length?', הערות בזמן ההחזקה: '+a.tips.join(', '):''} (קו גוף ${a.line}°, מרפק ${a.elbow}°, ברך ${a.knee}°, ירך ${a.hip}°, הטיית גוף מהאופק ${a.tilt}°)`).join('\n')||'אין ניסיון של יותר מחצי שנייה')+`\nהחזקה הכי ארוכה: ${(L.bestHold/1000).toFixed(1)} שנ׳. סך הכל ${(L.holdMs/1000).toFixed(1)} שנ׳ בהחזקה, מתוכן ${(L.cleanMs/1000).toFixed(1)} שנ׳ בלי שום הערה.${Object.keys(L.tips).length?' הערות קטנות שעלו: '+Object.entries(L.tips).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).join(', '):''}`;
   return 'מצב מעקב כללי, בלי ספירה אוטומטית'}
 function drawSkel(cv,lm,vw,vh){const c=cv.getContext('2d');const W=cv.clientWidth,H=cv.clientHeight;if(cv.width!==W*devicePixelRatio){cv.width=W*devicePixelRatio;cv.height=H*devicePixelRatio}
   c.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);c.clearRect(0,0,W,H);if(!lm)return;
-  const sc=Math.max(W/vw,H/vh),ox=(W-vw*sc)/2,oy=(H-vh*sc)/2;const X=i=>[ox+lm[i].x*vw*sc,oy+lm[i].y*vh*sc];
+  const sc=Math.min(W/vw,H/vh),ox=(W-vw*sc)/2,oy=(H-vh*sc)/2;const X=i=>[ox+lm[i].x*vw*sc,oy+lm[i].y*vh*sc];
   const col='#33e1c4';c.lineWidth=5;c.lineCap='round';c.strokeStyle=col;c.shadowColor=col;c.shadowBlur=10;
   for(const [a,b] of [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]]){if((lm[a].visibility??1)<.3||(lm[b].visibility??1)<.3)continue;const p=X(a),q=X(b);c.beginPath();c.moveTo(p[0],p[1]);c.lineTo(q[0],q[1]);c.stroke()}
   c.shadowBlur=0;c.fillStyle='rgba(255,255,255,.85)';for(const i of [11,12,13,14,15,16,23,24,25,26,27,28]){if((lm[i].visibility??1)<.3)continue;const p=X(i);c.beginPath();c.arc(p[0],p[1],6,0,7);c.fill()}}
 function liveHud(){const L=LIVE;if(!L)return;const E=LIVE_EX[L.id]||{kind:'general'};
   $('#liveBig').textContent=E.kind==='hold'?(L.cur/1000).toFixed(1)+'s':E.kind==='general'?'🦴':String(L.reps);
-  $('#liveSub').textContent=E.kind==='hold'?`הכי ארוך: ${(L.bestHold/1000).toFixed(1)} שנ׳`:E.kind==='general'?'':`חזרות טובות${L.bad?` · ${L.bad} לא נספרו`:''}`;
+  $('#liveSub').textContent=E.kind==='hold'?`הכי ארוך: ${(L.bestHold/1000).toFixed(1)} שנ׳`:E.kind==='general'?'':`חזרות${L.bad?` · ${L.bad} לא נספרו`:''}`;
   const m=$('#liveMsg');m.textContent=L.msg||'';m.className='live-msg '+(L.cls||'')}
 async function startCamera(){const v=$('#liveVid');if(v.srcObject){v.srcObject.getTracks().forEach(t=>t.stop())}
   const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:LIVE.facing,width:{ideal:720},height:{ideal:1280}},audio:false});
@@ -838,16 +850,17 @@ async function startLive(id,name){closeSheet();LIVE=liveNew(id,name||LIVE_EX[id]
 function stopLive(){if(!LIVE)return;LIVE.running=false;cancelAnimationFrame(LIVE.raf);const v=$('#liveVid');if(v.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null}$('#live').classList.add('hidden')}
 function liveResult(L){const E=LIVE_EX[L.id]||{kind:'general'};const top=Object.entries(L.issues).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
   let score,headline;
-  if(E.kind==='hold'){const s=L.bestHold/1000;score=Math.max(1,Math.min(10,Math.round(s/3)+ (s>0?2:0)));headline=`החזקה הכי ארוכה בטכניקה נכונה: ${s.toFixed(1)} שנ׳`}
+  if(E.kind==='hold'){const s=L.bestHold/1000;const clean=L.holdMs?L.cleanMs/L.holdMs:0;score=s<0.5?1:Math.min(10,Math.round(5+clean*3+Math.min(2,s/5)));headline=`החזקת ${s.toFixed(1)} שנ׳`}
   else if(E.kind==='general'){score=null;headline='השלד עקב אחריך'}
-  else{const tot=L.reps+L.bad;score=tot?Math.round(10*L.reps/tot):0;headline=`${L.reps} חזרות טובות${L.bad?`, ${L.bad} לא נספרו`:''}`}
-  return{score,headline,fix:top.slice(0,3),good:E.kind==='hold'?(L.bestHold>3000?['החזקה יציבה']:[]):(L.reps?[`${L.reps} חזרות בטווח מלא`]:[])}}
+  else{const tot=L.reps+L.bad;const tipN=L.log.filter(r=>r.ok&&r.why).length;score=tot?Math.max(1,Math.round(10*(L.reps-tipN*0.3)/tot)):0;headline=`${L.reps} חזרות נספרו${L.bad?`, ${L.bad} לא נספרו`:''}`}
+  const tipList=Object.entries(L.tips).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).filter(x=>!top.includes(x));
+  return{score,headline,fix:[...top,...tipList].slice(0,3),good:E.kind==='hold'?(L.bestHold>=1000?[`החזקת ${(L.bestHold/1000).toFixed(1)} שנ׳`]:[]):(L.reps?[`${L.reps} חזרות בטווח מלא`]:[])}}
 let LAST_LIVE=null;
 function finishLive(){const L=LIVE;if(!L)return;stopLive();const R=liveResult(L);LIVE=null;LAST_LIVE={L,R,entry:null};
   if(L.seen>5&&R.score!=null){const k='live|'+L.id;const e={date:today(),activity:L.name,score:R.score,good:R.good,fix:R.fix,drill:'',cue:'',live:true,metric:R.headline};(S.hist[k]||(S.hist[k]=[])).push(e);LAST_LIVE.entry=e;save()}
   sheet(`${head('בדיקה חיה',esc(L.name))}
    <div class="card">${R.score!=null?`<div class="score">${ring(R.score)}<div><div class="t">${esc(R.headline)}</div></div></div>`:`<div class="t">${esc(R.headline)}</div>`}
-   ${R.fix.length?`<div id="liveLocalFix"><div class="t" style="color:var(--accent)">מה לתקן</div><ul class="clean">${R.fix.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:L.seen>5?'<div class="small" style="color:var(--good)">לא זיהיתי טעויות. כל הכבוד!</div>':'<div class="small muted">לא הספקתי לראות אותך מספיק. נסה שוב, כשכל הגוף בפריים.</div>'}</div>
+   ${R.fix.length?`<div id="liveLocalFix"><div class="t" style="color:var(--accent)">מה לשפר בפעם הבאה</div><ul class="clean">${R.fix.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:L.seen>5?'<div class="small" style="color:var(--good)">לא זיהיתי טעויות. כל הכבוד!</div>':'<div class="small muted">לא הספקתי לראות אותך מספיק. נסה שוב, כשכל הגוף בפריים.</div>'}</div>
    <div id="liveDeep"></div>
    ${L.seen>5?`<button class="btn block" id="liveDeepBtn" data-act="livedeep">ניתוח מעמיק מהמאמן 🔍</button><p class="small muted" id="liveDeepNote" style="margin:0">המאמן יקבל את המדידות ו-${pickSnaps(L).length||'כמה'} תמונות מרגעי המפתח.</p>`:''}
    <button class="btn block ghost" data-act="liveagain" data-id="${esc(L.id)}" data-name="${esc(L.name)}">נסה שוב</button>`)}
