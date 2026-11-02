@@ -892,10 +892,10 @@ async function startCamera(){const v=$('#liveVid');if(v.srcObject){v.srcObject.g
     if(sc>=1e7&&w*h>=700*1200)break}
   if(!best)throw{name:'NoCamera'};if(v.srcObject!==best){v.srcObject=best;await v.play().catch(()=>{})}
   // use the most detail the camera offers (sharper when the picture is zoomed to fill the screen)
-  try{const tr=best.getVideoTracks()[0];const cap=tr.getCapabilities?.();if(cap?.width?.max&&cap?.height?.max){const st0=tr.getSettings();if(st0.width*st0.height<cap.width.max*cap.height.max*0.5){const r=st0.width/st0.height,L_=1920;await tr.applyConstraints({width:{ideal:Math.round(r>=1?L_:L_*r)},height:{ideal:Math.round(r>=1?L_/r:L_)}}).catch(()=>{});await wait(300)}}}catch(e){}
+  try{const tr=best.getVideoTracks()[0];const cap=tr.getCapabilities?.();if(cap?.width?.max&&cap?.height?.max){const st0=tr.getSettings();if(st0.width*st0.height<cap.width.max*cap.height.max*0.5){await tr.applyConstraints({width:{ideal:Math.min(cap.width.max,1920)},height:{ideal:Math.min(cap.height.max,1920)}}).catch(()=>{});await wait(300)}}}catch(e){}
   LIVE.res=v.videoWidth?`${v.videoWidth}×${v.videoHeight}`:'';
-  setTimeout(async()=>{try{if(!LIVE||v.srcObject!==best||Math.max(v.videoWidth,v.videoHeight)>=1200)return;const tr=best.getVideoTracks()[0];const r=v.videoWidth/v.videoHeight;
-    await tr.applyConstraints({width:{ideal:Math.round(r>=1?1920:1920*r)},height:{ideal:Math.round(r>=1?1920/r:1920)}});await wait(400);if(LIVE)LIVE.res=`${v.videoWidth}×${v.videoHeight}`}catch(e){}},1500);
+  setTimeout(async()=>{try{if(!LIVE||v.srcObject!==best||Math.max(v.videoWidth,v.videoHeight)>=1200)return;const tr=best.getVideoTracks()[0];
+    await tr.applyConstraints({width:{ideal:1920},height:{ideal:1920}});await wait(400);if(LIVE)LIVE.res=`${v.videoWidth}×${v.videoHeight}`}catch(e){}},1500);
   $('#live').classList.toggle('mirror',LIVE.facing==='user')}
 async function startLive(id,name){closeSheet();LIVE=liveNew(id,name||LIVE_EX[id]?.name||'תרגיל');const box=$('#live');box.classList.remove('hidden');
   $('#liveName').textContent=LIVE.name;$('#liveFitBtn').textContent='⤢ כל הפריים';$('#liveVid').style.objectFit='cover';$('#liveVid').style.objectPosition='50% 50%';$('#live').classList.remove('whole');LIVE.msg=LIVE_EX[id]?.tip||'צלם כך שכל הגוף ייכנס בפריים';LIVE.cls='';liveHud();
@@ -1412,7 +1412,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='emai
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='customIn'||e.target.id==='areaIn')){e.preventDefault();const id=e.target.id;(id==='areaIn'?addArea:addCustom)(e.target.value);save();render();setTimeout(()=>$('#'+id)?.focus(),0)}});
 render();
 /* ---------- updates: when a new version is published, show it and load it ---------- */
-const APP_VER='20261102215241';
+const APP_VER='20261102215625';
 function updScreen(html){let d=$('#upd');if(!d){d=document.createElement('div');d.id='upd';d.className='upd';document.body.append(d)}d.innerHTML=`<div class="upd-box" dir="rtl" lang="he">${html}</div>`}
 async function checkUpdate(){if(location.protocol!=='https:'||LIVE)return;let j;try{j=await (await fetch('version.json?t='+Date.now(),{cache:'no-store'})).json()}catch(e){return}
   if(!j?.ver||j.ver===APP_VER)return;const key='upd-'+j.ver;let n=0;try{n=+sessionStorage.getItem(key)||0;sessionStorage.setItem(key,n+1)}catch(e){n=9}
