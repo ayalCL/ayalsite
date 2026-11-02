@@ -848,7 +848,7 @@ function liveStats(L){const E=LIVE_EX[L.id]||{kind:'general'};
 function frameView(L,lm,v){const W=innerWidth,H=innerHeight,vw=v.videoWidth,vh=v.videoHeight;const sc=Math.max(W/vw,H/vh);const fx=W/(vw*sc),fy=H/(vh*sc);
   if(!L.view)L.view={fit:'cover',px:.5,py:.5,t:0};const V=L.view;
   if(lm){const pts=[0,11,12,13,14,15,16,23,24,25,26,27,28].map(i=>lm[i]).filter(q=>q&&(q.visibility??1)>.35);
-    if(pts.length>=4){const xs=pts.map(q=>q.x),ys=pts.map(q=>q.y);const x0=Math.min(...xs)-.06,x1=Math.max(...xs)+.06,y0=Math.min(...ys)-.08,y1=Math.max(...ys)+.06;
+    if(pts.length>=4){const xs=pts.map(q=>q.x),ys=pts.map(q=>q.y);const x0=Math.min(...xs)-.03,x1=Math.max(...xs)+.03,y0=Math.min(...ys)-.05,y1=Math.max(...ys)+.04;
       const fits=(x1-x0)<=fx&&(y1-y0)<=fy,clear=(x1-x0)<=fx-.04&&(y1-y0)<=fy-.04;const now=performance.now();
       if(V.fit==='cover'&&!fits){if(!V.t)V.t=now;if(now-V.t>500){V.fit='contain';V.t=0}}else if(V.fit==='contain'&&clear){if(!V.t)V.t=now;if(now-V.t>800){V.fit='cover';V.t=0}}else V.t=0;
       const pos=(c,f)=>f>=1?.5:Math.max(0,Math.min(1,(c-f/2)/(1-f)));
@@ -1383,7 +1383,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='emai
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='customIn'||e.target.id==='areaIn')){e.preventDefault();const id=e.target.id;(id==='areaIn'?addArea:addCustom)(e.target.value);save();render();setTimeout(()=>$('#'+id)?.focus(),0)}});
 render();
 /* ---------- updates: when a new version is published, show it and load it ---------- */
-const APP_VER='20261102213020';
+const APP_VER='20261102213310';
 function updScreen(html){let d=$('#upd');if(!d){d=document.createElement('div');d.id='upd';d.className='upd';document.body.append(d)}d.innerHTML=`<div class="upd-box" dir="rtl" lang="he">${html}</div>`}
 async function checkUpdate(){if(location.protocol!=='https:'||LIVE)return;let j;try{j=await (await fetch('version.json?t='+Date.now(),{cache:'no-store'})).json()}catch(e){return}
   if(!j?.ver||j.ver===APP_VER)return;const key='upd-'+j.ver;let n=0;try{n=+sessionStorage.getItem(key)||0;sessionStorage.setItem(key,n+1)}catch(e){n=9}
