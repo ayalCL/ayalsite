@@ -76,7 +76,9 @@ body.has-bg .onbg,body.has-bg .onbg .muted,body.has-bg .onbg .eyebrow,body.has-b
 .live-msg.bad{background:rgba(185,58,44,.85)}
 .live-bottom{position:absolute;left:0;right:0;bottom:0;padding:12px max(16px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:linear-gradient(transparent,rgba(0,0,0,.6))}
 .exgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.exgrid .sport{min-height:0;padding:14px 8px}.exgrid .disp{font-size:17px;line-height:1.2}
+.exgrid .sport{min-height:0;padding:14px 8px}
+.fixc{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface)}.fixc summary{cursor:pointer;list-style-position:inside}.fixc[open] summary{margin-bottom:6px}.fixc .small{margin-top:4px}
+.drillc{background:var(--accent-soft)}.exgrid .disp{font-size:17px;line-height:1.2}
 .exgrid .sport{min-height:0;padding:12px 8px;text-align:center;align-items:center}
 .exgrid .sport .disp{font-size:24px}
 .celebrate{text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px 0}
@@ -753,35 +755,62 @@ function holdCheck(kind,m){const issues=[];
   if(kind==='handstand'){if(!m.inverted)issues.push('עלה לעמידת ידיים');else{if(m.line<160)issues.push('גוף ישר, בלי קשת בגב');if(m.elbow<155)issues.push('ידיים נעולות')}}
   return issues}
 let LIVE=null;
-function liveNew(id,name){return{id,name,facing:'user',running:false,reps:0,bad:0,state:'up',min:999,max:0,partial:false,holdMs:0,bestHold:0,cur:0,lastT:0,issues:{},smooth:null,msg:'',msgT:0,frames:0,seen:0}}
+function liveNew(id,name){return{id,name,facing:'user',running:false,reps:0,bad:0,state:'up',min:999,max:0,partial:false,holdMs:0,bestHold:0,cur:0,lastT:0,issues:{},smooth:null,msg:'',msgT:0,frames:0,seen:0,log:[],rep:null,attempts:[],hsnaps:[],snapT:0}}
+// one finished rep: how deep, how straight, how long, and a picture of its bottom
+function repEnd(L,t,ok,why){const r=L.rep;if(r)L.log.push({ok,why:why||'',min:Math.round(r.min),line:Math.round(r.lineMin),dur:Math.round((t-r.t0)/100)/10,snap:r.snap||null});L.rep=null}
 function liveStep(L,m,t){const E=LIVE_EX[L.id]||{kind:'general'};L.frames++;if(!m.visible){L.msg='צריך לראות את כל הגוף בפריים';L.cls='bad';L.lastT=t;return}L.seen++;
   const dt=L.lastT?Math.min(200,t-L.lastT):0;L.lastT=t;
   const note=x=>{L.issues[x]=(L.issues[x]||0)+1};
   if(E.kind==='reps'){let a=m[E.joint];L.smooth=L.smooth==null?a:L.smooth*0.6+a*0.4;a=L.smooth;
+    if(!L.rep)L.rep={t0:t,min:999,lineMin:180};if(a<L.rep.min-2){L.rep.min=a;if(t-L.snapT>150){L.snapReq='rep';L.snapT=t}}L.rep.lineMin=Math.min(L.rep.lineMin,m.line);
     const lo=E.inverse?a<E.down:a<E.down, hi=E.inverse?a>E.up:a>E.up;
     if(L.state==='up'){L.min=Math.min(L.min,a);
       if(lo){L.state='down';L.formBad=false}
-      else if(hi&&L.min<E.up-30){L.bad++;note(E.joint==='knee'?'רד עמוק יותר':'רד עמוק יותר, טווח מלא');L.msg=E.joint==='knee'?'חצי חזרה: רד עמוק יותר':'חצי חזרה: רד עמוק יותר';L.cls='bad';L.min=999}
-      else if(hi)L.min=999}
+      else if(hi&&L.min<E.up-30){L.bad++;repEnd(L,t,false,'חצי חזרה');note(E.joint==='knee'?'רד עמוק יותר':'רד עמוק יותר, טווח מלא');L.msg=E.joint==='knee'?'חצי חזרה: רד עמוק יותר':'חצי חזרה: רד עמוק יותר';L.cls='bad';L.min=999}
+      else if(hi){L.min=999;L.rep={t0:t,min:999,lineMin:180}}}
     else{if(E.line&&m.line<155){L.formBad=true}
       if(E.depth&&!m.hipBelowKnee&&a<E.down+5){}
       if(hi){L.state='up';L.min=999;
-        if(L.formBad){L.bad++;note('גוף ישר לאורך כל החזרה');L.msg='✗ הגוף לא היה ישר';L.cls='bad'}
-        else{L.reps++;L.msg='✓ חזרה טובה';L.cls='good'}}}
+        if(L.formBad){L.bad++;repEnd(L,t,false,'גוף לא ישר');note('גוף ישר לאורך כל החזרה');L.msg='✗ הגוף לא היה ישר';L.cls='bad'}
+        else{L.reps++;repEnd(L,t,true);L.msg='✓ חזרה טובה';L.cls='good'}}}
     if(L.state==='down'&&E.line&&m.line<155){L.msg='יישר את הגוף!';L.cls='bad'}
     return}
   if(E.kind==='pull'){const a=m.elbow;L.smooth=L.smooth==null?a:L.smooth*0.6+a*0.4;
+    if(!L.rep)L.rep={t0:t,min:999,lineMin:180};if(L.smooth<L.rep.min-2){L.rep.min=L.smooth;if(t-L.snapT>150){L.snapReq='rep';L.snapT=t}}L.rep.lineMin=Math.min(L.rep.lineMin,m.line??180);
     if(L.state==='up'){ // "up" here = hanging at the bottom, waiting to pull
-      if(L.smooth<80&&m.noseAboveWrist){L.state='top';L.reps++;L.msg='✓ חזרה טובה';L.cls='good'}
+      if(L.smooth<80&&m.noseAboveWrist){L.state='top';L.reps++;repEnd(L,t,true);L.msg='✓ חזרה טובה';L.cls='good'}
       else if(L.smooth<95&&!m.noseAboveWrist){L.msg='עוד קצת! סנטר מעל המוט';L.cls='bad';L.near=true}}
     else if(L.smooth>150){L.state='up';L.near=false}
-    if(L.state==='up'&&L.near&&L.smooth>150){L.bad++;note('סנטר מעל המוט בכל חזרה');L.near=false}
+    if(L.state==='up'&&L.near&&L.smooth>150){L.bad++;repEnd(L,t,false,'הסנטר לא עבר את המוט');note('סנטר מעל המוט בכל חזרה');L.near=false}
+    else if(L.state==='up'&&!L.near&&L.smooth>150&&L.rep&&L.rep.min>150)L.rep={t0:t,min:999,lineMin:180}
     return}
   if(E.kind==='hold'){const iss=holdCheck(E.hold,m);
+    if(t-L.snapT>800){L.snapReq=iss.length?'bad:'+iss[0]:'good';L.snapT=t}
     if(!iss.length){L.cur+=dt;L.holdMs+=dt;L.bestHold=Math.max(L.bestHold,L.cur);L.msg='✓ מחזיק נכון';L.cls='good'}
-    else{if(L.cur>500)note(iss[0]);L.cur=0;L.msg=iss[0];L.cls='bad'}
+    else{if(L.cur>500){note(iss[0]);L.attempts.push({sec:Math.round(L.cur/100)/10,broke:iss[0],line:Math.round(m.line),elbow:Math.round(m.elbow),tilt:Math.round(m.bodyTilt)})}L.cur=0;L.msg=iss[0];L.cls='bad'}
     return}
+  if(t-L.snapT>1200){L.snapReq='general';L.snapT=t}
   L.msg='השלד עוקב אחריך. לחץ "סיימתי" כשתסיים.';L.cls=''}
+function grabSnap(v,mirror){const sc=Math.min(1,640/Math.max(v.videoWidth,v.videoHeight));const c=document.createElement('canvas');c.width=Math.round(v.videoWidth*sc);c.height=Math.round(v.videoHeight*sc);
+  const x=c.getContext('2d');if(mirror){x.translate(c.width,0);x.scale(-1,1)}x.drawImage(v,0,0,c.width,c.height);return new Promise(r=>c.toBlob(r,'image/jpeg',.8))}
+function takeSnap(L,v){const kind=L.snapReq;L.snapReq=null;const p=grabSnap(v,L.facing==='user');
+  if(kind==='rep'){if(L.rep)L.rep.snap=p}
+  else{L.hsnaps.push({kind,cur:L.cur,p});if(L.hsnaps.length>60)L.hsnaps.splice(0,L.hsnaps.length-60)}}
+// the pictures worth showing the coach: best and worst moments, at most 4
+function pickSnaps(L){const E=LIVE_EX[L.id]||{kind:'general'};const out=[];const add=(p,label)=>{if(p&&out.length<4&&!out.some(o=>o.p===p))out.push({p,label})};
+  if(E.kind==='reps'||E.kind==='pull'){const R=L.log.map((r,i)=>({...r,i:i+1}));const ok=R.filter(r=>r.ok),bad=R.filter(r=>!r.ok);
+    if(ok[0])add(ok[0].snap,`חזרה ${ok[0].i} (נספרה), נקודה תחתונה`);
+    bad.forEach(b=>add(b.snap,`חזרה ${b.i} (לא נספרה: ${b.why})`));
+    if(ok.length>1)add(ok[ok.length-1].snap,`חזרה ${ok[ok.length-1].i} (נספרה, אחרונה)`)}
+  else{const H=L.hsnaps;const g=H.filter(h=>h.kind==='good').sort((a,b)=>b.cur-a.cur);const b=H.filter(h=>h.kind.startsWith('bad'));
+    if(g[0])add(g[0].p,'רגע של החזקה נכונה');const seen=new Set();for(const x of b){const k=x.kind.slice(4);if(seen.has(k))continue;seen.add(k);add(x.p,'טעות: '+k)}
+    if(E.kind==='general'){const n=H.length;for(const i of [0,Math.floor(n/3),Math.floor(2*n/3),n-1])if(H[i])add(H[i].p,'רגע מהביצוע')}}
+  return out}
+function liveStats(L){const E=LIVE_EX[L.id]||{kind:'general'};
+  if(E.kind==='reps'||E.kind==='pull'){const j=E.kind==='pull'?'מרפק בנקודה העליונה':E.joint==='knee'?'ברך בנקודה התחתונה':E.joint==='hip'?'ירך':'מרפק בנקודה התחתונה';
+    return `מדידות מהשלד (זוויות במעלות, 180 = ישר; ירידה מלאה = פחות מ-${E.down||80}; קו גוף 180 = כתף-אגן-קרסול בקו ישר):\n`+(L.log.map((r,i)=>`חזרה ${i+1}: ${r.ok?'נספרה':'לא נספרה ('+r.why+')'}, זווית ${j}: ${r.min}°, קו גוף מינימלי: ${r.line}°, משך: ${r.dur} שנ׳`).join('\n')||'לא הושלמו חזרות')}
+  if(E.kind==='hold')return `ניסיונות החזקה (רק זמן בטכניקה נכונה נספר):\n`+(L.attempts.map((a,i)=>`ניסיון ${i+1}: ${a.sec} שנ׳, נשבר בגלל: ${a.broke} (קו גוף ${a.line}°, מרפק ${a.elbow}°, הטיית גוף מהאופק ${a.tilt}°)`).join('\n')||'אין ניסיון של יותר מחצי שנייה')+`\nהחזקה הכי ארוכה: ${(L.bestHold/1000).toFixed(1)} שנ׳`;
+  return 'מצב מעקב כללי, בלי ספירה אוטומטית'}
 function drawSkel(cv,lm,vw,vh){const c=cv.getContext('2d');const W=cv.clientWidth,H=cv.clientHeight;if(cv.width!==W*devicePixelRatio){cv.width=W*devicePixelRatio;cv.height=H*devicePixelRatio}
   c.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);c.clearRect(0,0,W,H);if(!lm)return;
   const sc=Math.max(W/vw,H/vh),ox=(W-vw*sc)/2,oy=(H-vh*sc)/2;const X=i=>[ox+lm[i].x*vw*sc,oy+lm[i].y*vh*sc];
@@ -804,7 +833,7 @@ async function startLive(id,name){closeSheet();LIVE=liveNew(id,name||LIVE_EX[id]
   if(!LIVE)return;LIVE.running=true;LIVE.msg=LIVE_EX[id]?.tip||'עמוד כך שכל הגוף ייראה';const v=$('#liveVid'),cv=$('#liveCan');let lastHud=0;
   const loop=()=>{if(!LIVE||!LIVE.running)return;const t=performance.now();
     if(v.readyState>=2&&v.videoWidth){try{const r=pose.detectForVideo(v,t);const lm=r?.landmarks?.[0];drawSkel(cv,lm,v.videoWidth,v.videoHeight);
-      if(lm)liveStep(LIVE,liveMeasure(LIVE.id,lm,v.videoWidth/v.videoHeight),t);else{LIVE.msg='לא רואה אותך. התרחק קצת מהמצלמה';LIVE.cls='bad'}}catch(e){console.warn(e)}}
+      if(lm){liveStep(LIVE,liveMeasure(LIVE.id,lm,v.videoWidth/v.videoHeight),t);if(LIVE.snapReq)takeSnap(LIVE,v)}else{LIVE.msg='לא רואה אותך. התרחק קצת מהמצלמה';LIVE.cls='bad'}}catch(e){console.warn(e)}}
     if(t-lastHud>120){liveHud();lastHud=t}LIVE.raf=requestAnimationFrame(loop)};loop()}
 function stopLive(){if(!LIVE)return;LIVE.running=false;cancelAnimationFrame(LIVE.raf);const v=$('#liveVid');if(v.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null}$('#live').classList.add('hidden')}
 function liveResult(L){const E=LIVE_EX[L.id]||{kind:'general'};const top=Object.entries(L.issues).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
@@ -813,19 +842,37 @@ function liveResult(L){const E=LIVE_EX[L.id]||{kind:'general'};const top=Object.
   else if(E.kind==='general'){score=null;headline='השלד עקב אחריך'}
   else{const tot=L.reps+L.bad;score=tot?Math.round(10*L.reps/tot):0;headline=`${L.reps} חזרות טובות${L.bad?`, ${L.bad} לא נספרו`:''}`}
   return{score,headline,fix:top.slice(0,3),good:E.kind==='hold'?(L.bestHold>3000?['החזקה יציבה']:[]):(L.reps?[`${L.reps} חזרות בטווח מלא`]:[])}}
-function finishLive(){const L=LIVE;if(!L)return;stopLive();const R=liveResult(L);LIVE=null;
-  if(L.seen>5&&R.score!=null){const k='live|'+L.id;(S.hist[k]||(S.hist[k]=[])).push({date:today(),activity:L.name,score:R.score,good:R.good,fix:R.fix,drill:'',cue:'',live:true,metric:R.headline});save()}
+let LAST_LIVE=null;
+function finishLive(){const L=LIVE;if(!L)return;stopLive();const R=liveResult(L);LIVE=null;LAST_LIVE={L,R,entry:null};
+  if(L.seen>5&&R.score!=null){const k='live|'+L.id;const e={date:today(),activity:L.name,score:R.score,good:R.good,fix:R.fix,drill:'',cue:'',live:true,metric:R.headline};(S.hist[k]||(S.hist[k]=[])).push(e);LAST_LIVE.entry=e;save()}
   sheet(`${head('בדיקה חיה',esc(L.name))}
    <div class="card">${R.score!=null?`<div class="score">${ring(R.score)}<div><div class="t">${esc(R.headline)}</div></div></div>`:`<div class="t">${esc(R.headline)}</div>`}
-   ${R.fix.length?`<div><div class="t" style="color:var(--accent)">מה לתקן</div><ul class="clean">${R.fix.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:L.seen>5?'<div class="small" style="color:var(--good)">לא זיהיתי טעויות. כל הכבוד!</div>':'<div class="small muted">לא הספקתי לראות אותך מספיק. נסה שוב, כשכל הגוף בפריים.</div>'}</div>
-   ${L.seen>5?`<button class="btn block" data-act="liveask" data-name="${esc(L.name)}" data-sum="${esc(R.headline+(R.fix.length?'. טעויות שזוהו: '+R.fix.join(', '):'. לא זוהו טעויות'))}">שאל את המאמן מה לשפר</button>`:''}
+   ${R.fix.length?`<div id="liveLocalFix"><div class="t" style="color:var(--accent)">מה לתקן</div><ul class="clean">${R.fix.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:L.seen>5?'<div class="small" style="color:var(--good)">לא זיהיתי טעויות. כל הכבוד!</div>':'<div class="small muted">לא הספקתי לראות אותך מספיק. נסה שוב, כשכל הגוף בפריים.</div>'}</div>
+   <div id="liveDeep"></div>
+   ${L.seen>5?`<button class="btn block" id="liveDeepBtn" data-act="livedeep">ניתוח מעמיק מהמאמן 🔍</button><p class="small muted" id="liveDeepNote" style="margin:0">המאמן יקבל את המדידות ו-${pickSnaps(L).length||'כמה'} תמונות מרגעי המפתח.</p>`:''}
    <button class="btn block ghost" data-act="liveagain" data-id="${esc(L.id)}" data-name="${esc(L.name)}">נסה שוב</button>`)}
 function openLivePicker(){sheet(`${head('הראה למאמן','מה אתה מבצע?')}
    <div class="addrow"><input type="text" id="liveQ" placeholder="חפש תרגיל, למשל: פרונט לבר"><button class="btn" type="button" data-act="livefind">חפש</button></div>
    <div id="liveFindOut"></div>
    <div class="eyebrow">בסיס</div><div class="exgrid">${LIVE_BASE.map(id=>`<button class="sport" type="button" data-act="livego" data-id="${id}"><span class="disp">${esc(LIVE_EX[id].name)}</span></button>`).join('')}</div>
    <div class="eyebrow">החזקות וסקילים</div><div class="exgrid">${LIVE_MORE.map(id=>`<button class="sport" type="button" data-act="livego" data-id="${id}"><span class="disp">${esc(LIVE_EX[id].name)}</span></button>`).join('')}</div>
-   <p class="small muted">המצלמה נפתחת והשלד מתיישב על הגוף. הכל קורה בטלפון: הסרטון לא נשלח ולא נשמר.</p>`)}
+   <p class="small muted">המצלמה נפתחת והשלד מתיישב על הגוף. השלד רץ בטלפון והסרטון לא נשמר. תמונות מרגעי המפתח נשלחות למאמן רק אם תבקש ניתוח מעמיק.</p>`)}
+async function liveDeep(){const X=LAST_LIVE;if(!X)return;const {L,R}=X;const box=$('#liveDeep');const btn=$('#liveDeepBtn');
+  if(!AI||!IMG){box.innerHTML='<div class="banner">ניתוח מעמיק עובד כשאתה מחובר לחשבון.</div>';return}
+  btn?.remove();$('#liveDeepNote')?.remove();box.innerHTML='<p class="muted">המאמן עובר על החזרות והתמונות… (עד דקה)</p>';
+  const snaps=pickSnaps(L);const blobs=(await Promise.all(snaps.map(s=>s.p))).filter(Boolean);
+  let r;try{r=await AI.json(`אתה מאמן מומחה ברמה עולמית לכוח וקליסטניקס. המתאמן עשה עכשיו בדיקה חיה באפליקציה: ${L.name}. מעקב שלד (MediaPipe) מדד כל חזרה או החזקה.
+${liveStats(L)}
+סיכום האפליקציה: ${R.headline}.${R.fix.length?' טעויות שזוהו אוטומטית: '+R.fix.join(', ')+'.':''}
+${blobs.length?`מצורפות ${blobs.length} תמונות מרגעי מפתח, לפי הסדר: ${snaps.slice(0,blobs.length).map((s,i)=>`${i+1}) ${s.label}`).join('; ')}.`:''}
+${coachCtx('live|'+L.id)}
+השתמש במספרים: חפש דפוסים (למשל עייפות: הטווח מתקצר בחזרות האחרונות, קצב שמשתנה, ירידה בקו הגוף). המדידה דו-ממדית ממצלמה אחת, אז אם משהו נראה לא הגיוני, אמור את זה. ב-seen ציין מספר חזרה, ניסיון או תמונה.
+${DEEP_RULES}
+החזר רק JSON בעברית בצורה: ${DEEP_JSON}`,{images:blobs,max:2500})}
+  catch(e){box.innerHTML=`<div class="banner bad">${esc(aiFail(e))}</div>`;return}
+  const D=normDeep(r);if(X.entry){X.entry.deep=D;X.entry.fix=D.fix.map(f=>f.issue).slice(0,3);X.entry.cue=D.cue;X.entry.drill=D.drill?.name||'';save()}
+  $('#liveLocalFix')?.remove();
+  box.innerHTML=`<div class="card stack">${deepHtml(D)}</div><button class="btn block ghost" data-act="liveask" data-name="${esc(L.name)}" data-sum="${esc(R.headline+'. '+(D.priority||''))}">להמשיך עם המאמן בצ׳אט</button>`}
 async function liveFind(){const q=($('#liveQ')?.value||'').trim();const out=$('#liveFindOut');if(!q)return;
   let id=findLiveEx(q);
   if(!id&&AI){out.innerHTML='<p class="small muted">המאמן מחפש את התרגיל…</p>';
@@ -886,7 +933,7 @@ function msgHtml(m){let extra='';const th=m.thumbs?.length?`<div class="frames">
 function renderSugg(){$('#sugg').innerHTML=['מה האימון היום?','אני עייף, לוותר היום?','כואב לי המרפק אחרי אימון','איך משפרים '+(SPORTS[S.first]?.ex[0]||'')+'?'].map(t=>`<button class="chip" data-act="say">${esc(t)}</button>`).join('')}
 function talkRules(){const P=activeTalk();if(!P)return '';return `\n\nחשוב, עכשיו תרגול שיחה: המשימה "${P.task}". דבר איתו ב${P.lang} בלבד, ברמה ${S.langLevel||'בסיסית'}, משפטים קצרים ושאלה אחת בכל הודעה. אם יש טעות בהודעה האחרונה שלו, הוסף בסוף שורה קצרה בעברית: "תיקון: ...". זה גובר על הוראת השפה למעלה.`}
 function rules(){const r=S.reports.slice(-3).map(x=>`${x.date}: עשה: ${x.did}; קשה: ${x.hard}; הצליח: ${x.win}; רוצה להתמקד: ${x.focus}`).join('\n');
-  return `אתה "המאמן" באפליקציה Personal Life Coach: מאמן ספורט אישי צמוד, חם אבל דורש, שמכיר את המתאמן לאורך זמן. ${LANGLINE()} ענה בקצרה (עד 5 משפטים או רשימה קצרה), בגוף שני, בלי כותרות.
+  return `אתה "המאמן" באפליקציה Personal Life Coach: מאמן ספורט אישי צמוד, חם אבל דורש, שמכיר את המתאמן לאורך זמן. ${LANGLINE()} התאם את האורך לשאלה: על הודעה קלילה ענה קצר. על שאלה של טכניקה, תוכנית, התקדמות, פציעה או סרטון, ענה כמו מאמן מומחה: מה השורש (למה זה קורה), מה בדיוק לעשות עם מינון (סטים × חזרות, קצב, מנוחה), איך זה מרגיש כשזה נכון, ומתי להתקדם. ספציפי אליו ולא כללי. תבליטים קצרים, עד כ-10 שורות, בגוף שני, בלי כותרות.
 פרופיל: ${profile()}
 תוכנית היום: ${planItems().items.map(x=>x[0]).join(' | ')}
 דיווחי ערב אחרונים:\n${r||'אין עדיין'}
@@ -905,8 +952,8 @@ async function sendChat(text,media){if(chatBusy||(!text.trim()&&!media))return;c
   const box=$('#msgs');const b=document.createElement('div');b.className='msg a think';b.textContent='המאמן חושב…';box.append(b);scrollTo(0,document.body.scrollHeight);
   let reply;
   if(!AI||(media&&!IMG)){await wait(700);reply=media?'קיבלתי את הסרטון! ניתוח אמיתי של מה שרואים בו עובד כשהמאמן AI מחובר (בקישור של האפליקציה). אפשר גם להעלות אותו במסך "התקדמות" ולקבל ציון טכניקה.\n\n(מצב הדגמה)':fallbackChat(text)}
-  else{try{const turns=S.chat.slice(-14).map((m,i,a)=>({role:m.role,content:(m.thumbs?(m===a[a.length-1]&&media?`[המתאמן שלח ${media.video?'סרטון':'תמונה'}${media.video?`, מצורפים ${media.frames.length} פריימים ברצף מתוכו`:''}. התבונן בתמונות וענה כמאמן: מה הוא עושה, מה טוב, ומה לתקן (אם רלוונטי).] `:'[צירף סרטון/תמונה קודם בשיחה] '):'')+m.content}));
-   const r=await AI([{role:'user',content:rules()},...turns],{cache:false,...(media?{images:media.frames,modelTier:'default'}:{}),modelTier:'quick',onText:({text})=>{b.classList.remove('think');b.innerHTML=fmt(text)}});reply=r.text}
+  else{try{const turns=S.chat.slice(-14).map((m,i,a)=>({role:m.role,content:(m.thumbs?(m===a[a.length-1]&&media?`[המתאמן שלח ${media.video?'סרטון':'תמונה'}${media.video?`, מצורפים ${media.frames.length} פריימים ברצף מתוכו`:''}. התבונן בתמונות וענה כמאמן מומחה: מה הוא עושה, מה טוב ולמה, והגורם המגביל העיקרי: מה ראית בדיוק, למה זה קורה, ואיך לתקן עם תרגיל ומינון.] `:'[צירף סרטון/תמונה קודם בשיחה] '):'')+m.content}));
+   const r=await AI([{role:'user',content:rules()},...turns],{cache:false,...(media?{images:media.frames,modelTier:'default'}:{}),modelTier:'quick',max:1800,onText:({text})=>{b.classList.remove('think');b.innerHTML=fmt(text)}});reply=r.text}
    catch(e){reply=(e.text?e.text+'\n\n':'')+aiFail(e)}}
   S.chat.push({role:'assistant',content:reply});
   const P=activeTalk();if(P&&!media){P.n=(P.n||0)+1;
@@ -953,14 +1000,48 @@ function progressView(){const areaCards=nonSport().map(areaCard).join('');
   ${H.length?`<section class="card"><div class="row between"><div class="eyebrow">היסטוריה · ${esc(S.ex)}</div>${sparkSvg(H.map(x=>x.score))}</div>
    ${H.slice().reverse().map(x=>`<div class="hist"><div><div class="small num muted">${esc(x.date)}</div><div class="small">${esc(x.fix?.[0]||'')}</div></div><div class="row">${x.demo?'<span class="tag demo">דוגמה</span>':''}<span class="s">${x.score}</span></div></div>`).join('')}</section>`:''}
   </div>`}
+const DEEP_RULES=`איך לתת משוב כמו מאמן מומחה ברמה הגבוהה ביותר:
+- קודם הבן מה הוא מנסה לעשות ובאיזו רמה הוא, ואז חפש את הגורם המגביל העיקרי: הדבר האחד שאם יתוקן, הכי הרבה דברים אחרים יסתדרו. הבדל בין סימפטום (מה רואים) לשורש (למה זה קורה: כוח, גמישות, תזמון, הבנה של התנועה).
+- כל תיקון חייב להיות ספציפי למה שרואים פה, לא עצה כללית. ציין איפה ראית את זה (מספר פריים או רגע בתנועה) ומה בדיוק בגוף (מפרק, זווית, כיוון).
+- הסבר למה זה חשוב: מה זה עולה לו בביצועים או איזה עומס זה שם על הגוף.
+- תן תיקון שאפשר להרגיש: הנחיה גופנית קצרה (מה לדחוף, לאן להסתכל, מה לנעול) ולא רק "תיישר".
+- תרגיל תיקון אמיתי עם מינון מלא (סטים × חזרות או שניות, קצב, מנוחה), איך מבצעים אותו נכון, ומתי לעבור לשלב הבא.
+- גם מה טוב, עם הסבר למה זה טוב, כדי שישמור על זה. בלי מחמאות ריקות.
+- דבר אליו בגוף שני, חם ומקצועי, כמו מאמן שמכיר אותו. אם רואים סיכון לפציעה, אמור את זה בבירור.`;
+const DEEP_JSON=`{"summary":"2-3 משפטים: השורה התחתונה, מה הרמה ומה מעכב אותו","good":[{"point":"מה טוב","why":"למה זה חשוב לשמור"}],"fix":[{"issue":"הבעיה בקצרה","seen":"איפה ומה ראיתי בדיוק","why":"למה זה חשוב / מה השורש","how":"איך לתקן: הנחיה גופנית מעשית"}],"priority":"הדבר האחד לעבוד עליו השבוע ולמה","drill":{"name":"שם התרגיל","dose":"סטים × חזרות/שניות, קצב, מנוחה","how":"איך מבצעים נכון, 1-2 משפטים","progress":"מתי עוברים לשלב הבא"},"cue":"משפט של עד 6 מילים לזכור באימון","next":"מה לצלם או לנסות בפעם הבאה כדי לראות התקדמות"}`;
+function coachCtx(k){const H=(S.hist[k]||[]).filter(x=>!x.demo).slice(-3);
+  return `על המתאמן: ${profile()}
+פציעות במעקב: ${activeInj().map(i=>`${REG[i.region].n} ${i.side}, כאב ${i.pain}/10`).join('; ')||'אין'}
+${H.length?`בדיקות קודמות בתרגיל הזה:\n${H.map(x=>`${x.date}: ציון ${x.score}. ${x.metric?x.metric+'. ':''}תיקון עיקרי: ${x.fix?.[0]||'-'}`).join('\n')}\nהתייחס להתקדמות: מה השתפר ומה עדיין חוזר.`:'זו הבדיקה הראשונה בתרגיל הזה.'}`}
+function normDeep(r){const arr=x=>[].concat(x||[]);
+  return{summary:String(r.summary||''),good:arr(r.good).map(g=>typeof g==='string'?{point:g}:{point:String(g.point||''),why:String(g.why||'')}).filter(g=>g.point).slice(0,3),
+    fix:arr(r.fix).map(f=>typeof f==='string'?{issue:f}:{issue:String(f.issue||''),seen:String(f.seen||''),why:String(f.why||''),how:String(f.how||'')}).filter(f=>f.issue).slice(0,3),
+    priority:String(r.priority||''),drill:r.drill&&typeof r.drill==='object'?{name:String(r.drill.name||''),dose:String(r.drill.dose||''),how:String(r.drill.how||''),progress:String(r.drill.progress||'')}:(r.drill?{name:String(r.drill)}:null),
+    cue:String(r.cue||''),next:String(r.next||'')}}
+function deepHtml(d){const line=(l,v)=>v?`<div class="small"><b>${l}</b> ${esc(v)}</div>`:'';
+  return `${d.summary?`<p>${esc(d.summary)}</p>`:''}
+   ${d.priority?`<div class="banner"><b>הדבר האחד לעבוד עליו:</b> ${esc(d.priority)}</div>`:''}
+   ${d.fix.length?`<div class="stack"><div class="t" style="color:var(--accent)">מה לתקן</div>${d.fix.map((f,i)=>`<details class="fixc"${i===0?' open':''}><summary><b>${esc(f.issue)}</b></summary>${line('מה ראיתי:',f.seen)}${line('למה זה חשוב:',f.why)}${line('איך לתקן:',f.how)}</details>`).join('')}</div>`:''}
+   ${d.good.length?`<div><div class="t" style="color:var(--good)">מה טוב</div><ul class="clean">${d.good.map(g=>`<li>${esc(g.point)}${g.why?`<div class="small muted">${esc(g.why)}</div>`:''}</li>`).join('')}</ul></div>`:''}
+   ${d.drill?.name?`<div class="card drillc"><div class="eyebrow">תרגיל לתיקון</div><div class="t">${esc(d.drill.name)}</div>${line('מינון:',d.drill.dose)}${line('ביצוע:',d.drill.how)}${line('מתי להתקדם:',d.drill.progress)}</div>`:''}
+   ${d.cue?`<div class="small"><b>לזכור באימון:</b> ${esc(d.cue)}</div>`:''}
+   ${d.next?`<div class="small muted"><b>בפעם הבאה:</b> ${esc(d.next)}</div>`:''}`}
+// more moments from the video within the 4-image limit: two frames side by side in each image, numbered
+async function pairFrames(blobs){if(blobs.length<=4)return blobs;const out=[];
+  for(let i=0;i<blobs.length;i+=2){const ims=[];for(const b of blobs.slice(i,i+2)){const u=URL.createObjectURL(b);const im=new Image();im.src=u;await im.decode();URL.revokeObjectURL(u);ims.push(im)}
+    const h=Math.min(...ims.map(x=>x.height));const ws=ims.map(x=>Math.round(x.width*h/x.height));const c=document.createElement('canvas');c.width=ws.reduce((a,b)=>a+b,0)+8*(ims.length-1);c.height=h;
+    const x=c.getContext('2d');x.fillStyle='#000';x.fillRect(0,0,c.width,c.height);let ox=0;
+    ims.forEach((im,j)=>{x.drawImage(im,ox,0,ws[j],h);const n=String(i+j+1);x.font=`bold ${Math.round(h/12)}px sans-serif`;x.fillStyle='rgba(0,0,0,.6)';x.fillRect(ox+6,6,h/9,h/9);x.fillStyle='#fff';x.fillText(n,ox+6+h/40,6+h/12);ox+=ws[j]+8});
+    out.push(await new Promise(r=>c.toBlob(r,'image/jpeg',.85)))}
+  return out}
 function resultHtml(r,prev){const d=prev?r.score-prev.score:null;
   return `<div class="stack" style="border-top:1px solid var(--line);padding-top:12px"><div class="score">${ring(r.score)}<div><div class="eyebrow">ציון טכניקה${r.activity?' · '+esc(r.activity):''} ${r.demo?'<span class="tag demo">דוגמה</span>':''}</div>
    ${d!==null?`<div class="t">${d>0?'עלייה של '+d+' מהפעם הקודמת':d<0?'ירידה של '+(-d)+' מהפעם הקודמת':'כמו בפעם הקודמת'}</div>`:'<div class="t">סרטון ראשון בתרגיל הזה</div>'}
-   ${r.cue?`<div class="small muted">לזכור באימון: ${esc(r.cue)}</div>`:''}</div></div>
+   ${r.cue&&!r.deep?`<div class="small muted">לזכור באימון: ${esc(r.cue)}</div>`:''}</div></div>
    ${r.thumbs?.length?`<div class="frames">${r.thumbs.map(t=>`<img src="${t}" alt="פריים מהסרטון">`).join('')}</div>`:''}
-   ${r.good?.length?`<div><div class="t" style="color:var(--good)">מה טוב</div><ul class="clean">${r.good.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
+   ${r.deep?deepHtml(r.deep):`${r.good?.length?`<div><div class="t" style="color:var(--good)">מה טוב</div><ul class="clean">${r.good.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
    ${r.fix?.length?`<div><div class="t" style="color:var(--accent)">מה לתקן</div><ul class="clean">${r.fix.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
-   ${r.drill?`<div class="banner"><b>תרגיל לתיקון:</b> ${esc(r.drill)}</div>`:''}</div>`}
+   ${r.drill?`<div class="banner"><b>תרגיל לתיקון:</b> ${esc(r.drill)}</div>`:''}`}</div>`}
 function once(el,ev,ms){return new Promise((res,rej)=>{let t;const h=()=>{clearTimeout(t);el.removeEventListener('error',er);res()};
   const er=()=>{clearTimeout(t);el.removeEventListener(ev,h);rej(new Error('decode'))};
   t=setTimeout(()=>{el.removeEventListener(ev,h);el.removeEventListener('error',er);rej(new Error('timeout'))},ms);
@@ -993,20 +1074,23 @@ function videoErr(e){return e?.message==='decode'
 async function thumb(blob){const u=URL.createObjectURL(blob);try{const im=new Image();im.src=u;await im.decode();const c=document.createElement('canvas');const s=150/Math.max(im.width,im.height);c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.7)}catch(e){return null}finally{URL.revokeObjectURL(u)}}
 async function analyze(file){const out=$('#anaOut');const k=S.psport+'|'+S.ex;const H=S.hist[k]||(S.hist[k]=[]);const prev=H[H.length-1];
   out.innerHTML='<p class="muted">מכין פריימים מהסרטון…</p>';
-  let fr=[];try{fr=await grabFrames(file,Math.max(1,Math.min(4,IMG||4)))}catch(e){console.warn('video',e);out.innerHTML=`<div class="banner bad">${esc(videoErr(e))}</div>`;return}
-  const thumbs=(await Promise.all(fr.map(thumb))).filter(Boolean);
+  let fr=[];try{fr=await grabFrames(file,IMG?8:4)}catch(e){console.warn('video',e);out.innerHTML=`<div class="banner bad">${esc(videoErr(e))}</div>`;return}
+  const thumbs=(await Promise.all(fr.filter((_,i)=>fr.length<=4||i%2===0).map(thumb))).filter(Boolean);
+  const nF=fr.length;let imgs=fr;try{imgs=await pairFrames(fr)}catch(e){imgs=fr.filter((_,i)=>i%2===0)}
   out.innerHTML='';const what=await askWhat(thumbs,'מה עשית בסרטון?',S.ex,'למשל: ניסיון להחזקת טאק פלאנש');if(what===null)return;
   out.innerHTML=`<div class="frames">${thumbs.map(t=>`<img src="${t}" alt="">`).join('')}</div><p class="muted">המאמן מנתח את הטכניקה… (עד דקה)</p>`;
   let r;
-  if(AI&&IMG){try{r=await AI.json(`אתה מאמן מומחה לכל סוגי הספורט. מצורפות ${fr.length} תמונות ברצף מתוך סרטון. המתאמן בחר באפליקציה: ${S.ex} (${SPORTS[S.psport].name}).${what?' הוא כתב שבסרטון: '+what+'.':''}
-חשוב: נתח את מה שבאמת רואים בתמונות. אם זו פעילות אחרת ממה שנבחר (למשל גלישה במקום כדורסל), זהה אותה ותן משוב על הפעילות הזו. נתח את הטכניקה כמו מאמן צמוד: ספציפי, קצר, מעשי.
-${prev?`בפעם הקודמת הציון היה ${prev.score} והתיקון העיקרי היה: ${prev.fix?.[0]||''}. התייחס אם השתפר.`:''}
-החזר רק JSON בעברית בצורה: {"activity":"מה רואים בסרטון, 1-3 מילים","visible":true,"score":7,"good":["עד 3 נקודות"],"fix":["עד 3 נקודות"],"drill":"תרגיל אחד לתיקון עם מינון","cue":"משפט של עד 6 מילים לזכור באימון"}.
-score בין 1 ל-10. אם התרגיל לא נראה בבירור בתמונות, החזר visible:false, score:0, ו-fix עם הנחיית צילום.`,{images:fr,modelTier:'default'})}
+  if(AI&&IMG){try{r=await AI.json(`אתה מאמן מומחה ברמה עולמית בכל סוגי הספורט (כולל קליסטניקס, טיפוס, כוח, כדורסל, גלישה). מצורפים ${nF} פריימים ברצף מתוך סרטון${imgs.length<nF?`, שניים בכל תמונה, ממוספרים 1-${nF} לפי סדר הזמן (המספר בפינה של כל פריים)`:''}. המתאמן בחר באפליקציה: ${S.ex} (${SPORTS[S.psport].name}).${what?' הוא כתב שבסרטון: '+what+'.':''}
+${coachCtx(k)}
+חשוב: נתח את מה שבאמת רואים בפריימים. אם זו פעילות אחרת ממה שנבחר, זהה אותה ותן משוב עליה. עבור על התנועה לפי השלבים שלה (התחלה, ביצוע, סיום) לפני שאתה מסכם.
+${DEEP_RULES}
+החזר רק JSON בעברית בצורה: {"activity":"מה רואים, 1-3 מילים","visible":true,"score":7,${DEEP_JSON.slice(1)}
+score בין 1 ל-10 לפי הרמה שלו (7 = טכניקה טובה עם תיקון אחד חשוב). good עד 3, fix עד 3 מהחשוב לפחות חשוב. אם התרגיל לא נראה בבירור, החזר visible:false, score:0, ו-summary עם הנחיה איך לצלם.`,{images:imgs,max:2500})}
    catch(e){out.innerHTML=`<div class="banner bad">${esc(aiFail(e))}</div>`;return}
-   if(r.visible===false||!r.score){out.innerHTML=`<div class="banner bad">לא רואים את התרגיל מספיק טוב. ${esc((r.fix||[]).join(' '))}</div>`;return}}
+   if(r.visible===false||!r.score){out.innerHTML=`<div class="banner bad">לא רואים את התרגיל מספיק טוב. ${esc(r.summary||[].concat(r.fix||[]).map(f=>f.issue||f).join(' '))}</div>`;return}}
   else{await wait(1200);r={score:Math.min(10,(prev?.score||5)+1),good:['קצב אחיד לאורך הסט','מנח ראש ניטרלי'],fix:['שים לב לטווח התנועה בסוף כל חזרה','שמור על מרכז הכובד מעל הבסיס'],drill:'3 סטים איטיים (3 שנ׳ ירידה) בקושי נמוך',cue:'לאט ומלא',demo:true}}
-  const entry={date:today(),activity:String(r.activity||what||''),score:Math.round(Number(r.score)),good:[].concat(r.good||[]).slice(0,3),fix:[].concat(r.fix||[]).slice(0,3),drill:String(r.drill||''),cue:String(r.cue||''),thumbs,demo:!!r.demo};
+  const D=r.demo?null:normDeep(r);
+  const entry={date:today(),activity:String(r.activity||what||''),score:Math.round(Number(r.score)),good:D?D.good.map(g=>g.point):[].concat(r.good||[]).slice(0,3),fix:D?D.fix.map(f=>f.issue):[].concat(r.fix||[]).slice(0,3),drill:D?.drill?.name||String(r.drill||''),cue:String(r.cue||''),thumbs,demo:!!r.demo,deep:D};
   H.push(entry);save();render();toast(entry.demo?'מצב הדגמה: ניתוח אמיתי פועל כשהמאמן AI מחובר':'הניתוח נשמר בהיסטוריה')}
 
 /* ---------- sheets ---------- */
@@ -1161,7 +1245,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   case'livedone':finishLive();break;
   case'liveagain':startLive(t.dataset.id,t.dataset.name);break;
   case'liveflip':if(LIVE){LIVE.facing=LIVE.facing==='user'?'environment':'user';startCamera().catch(()=>toast('לא הצלחתי להחליף מצלמה'))}break;
-  case'liveask':{closeSheet();S.tab='coach';save();render();sendChat(`עשיתי בדיקה חיה עם השלד: ${t.dataset.name}. התוצאה: ${t.dataset.sum}. מה לשפר ואיך להתקדם?`)}break;
+  case'livedeep':liveDeep();break;
+    case'liveask':{closeSheet();S.tab='coach';save();render();sendChat(`עשיתי בדיקה חיה עם השלד: ${t.dataset.name}. התוצאה: ${t.dataset.sum}. תסביר לי לעומק איך לתקן ואיך להתקדם.`)}break;
   case'look':{const ty=t.dataset.type,id=t.dataset.id;S.look=S.look||{};S.look[ty]=id;save();applyLook();render();openProfile();break}
   case'closereport':closeSheet();checkNewRewards();break;
   case'talk':startTalk(+t.dataset.i);break;
