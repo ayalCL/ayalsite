@@ -771,10 +771,20 @@ function liveMeasure(id,lm,ar,L){const E=LIVE_EX[id]||{kind:'general'};const sd=
   const elbow=ang(S_,El,W),knee=A0.v>T?ang(H,K,A0):180,hip=ang(S_,H,K),line=ang(S_,H,A),bodyTilt=tilt(S_,A);
   const avgY=(a,b)=>{const q=[lm[a],lm[b]].filter(x=>x&&(x.visibility??1)>T);return q.length?q.reduce((s,x)=>s+x.y,0)/q.length:null};
   const ys={sh:avgY(11,12),wr:avgY(15,16),hp:avgY(23,24),an:avgY(27,28)};
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);const armLen=dist(S_,El)+dist(El,W);
+  const pos={ey:El.v>T?El.y:null,sy:S_.y,wy:W.v>T?W.y:(L?.wyLast??null),hy:H.v>T?H.y:null,ky:K.v>T?K.y:null,ay:A0.v>T?A0.y:null,armLen,torsoTilt:H.v>T?tilt(S_,H):null};
   const chin=ys.wr!=null?lm[0].y<ys.wr+0.01:(L?.wyLast!=null?lm[0].y<L.wyLast+0.01:false);
-  return{visible,front,sig,ys,chin,elbow,knee,hip,line,bodyTilt,noseAboveWrist:N.y<W.y,wristAboveShoulder:W.y<S_.y,inverted:A.y<H.y&&H.y<S_.y,hipBelowKnee:H.y>=K.y-0.02,feetUp:A.y<W.y-0.02}}
+  return{visible,front,sig,ys,chin,pos,elbow,knee,hip,line,bodyTilt,noseAboveWrist:N.y<W.y,wristAboveShoulder:W.y<S_.y,inverted:A.y<H.y&&H.y<S_.y,hipBelowKnee:H.y>=K.y-0.02,feetUp:A.y<W.y-0.02}}
 // stop = the position is lost (clock stops). tip = still counts, but here is what to improve.
-function holdCheck(kind,m){const stop=[],tip=[];
+function holdPose(kind,m){const P=m.pos||{};if(P.wy==null)return null;const arm=P.armLen||0.2;
+  const below=P.wy>P.sy+0.4*arm, above=P.wy<P.sy-0.4*arm, feetUp=P.ay!=null&&P.ay<P.wy-0.02;
+  if(kind==='plank'){if(P.torsoTilt!=null&&P.torsoTilt>35)return 'צריך להיות בשכיבה, גוף מקביל לרצפה';const floor=Math.max(P.wy,P.ey??P.wy);return P.sy>floor-0.25*arm?'הרם את הגוף מהרצפה, על הידיים או האמות':null}
+  if(kind==='frontlever'||kind==='tuckfl')return above?(P.hy!=null&&P.hy<P.sy-0.6*arm?'זה נראה כמו עמידת ידיים, לא פרונט לבר':null):'צריך לתלות על המוט, ידיים מעל הכתפיים';
+  if(kind==='planche'||kind==='tuckplanche')return !below?'ידיים על הרצפה מתחת לכתפיים':(P.ay!=null&&P.ay>P.wy-0.5*arm?'הרגליים צריכות להיות באוויר':null);
+  if(kind==='lsit')return !below?'ידיים ישרות על הרצפה או הפרלטים, מתחת לכתפיים':(P.ay!=null&&P.ay>P.wy+0.03?'הרגליים צריכות להיות באוויר':null);
+  if(kind==='handstand')return P.wy<P.sy+0.4*arm||(P.torsoTilt!=null&&P.torsoTilt<60)?'ידיים על הרצפה, הגוף הפוך מעליהן':null;
+  return null}
+function holdCheck(kind,m){const stop=[],tip=[];const bad=holdPose(kind,m);if(bad){stop.push(bad);return{stop,tip}}
   if(kind==='plank'){if(m.line<140)stop.push('האגן ירד מדי, יישר את הגוף');else if(m.line<162)tip.push('יישר עוד קצת את הגוף')}
   if(kind==='frontlever'||kind==='tuckfl'){if(!m.wristAboveShoulder)stop.push('תלה על המוט, ידיים מעל הכתפיים');if(m.bodyTilt>40)stop.push('הגוף ירד, הרם אותו למקביל לרצפה');else if(m.bodyTilt>20)tip.push('עוד קצת למעלה, מקביל לרצפה');
     if(m.elbow<130)stop.push('ידיים ישרות');else if(m.elbow<155)tip.push('נסה לנעול את המרפקים');
@@ -790,13 +800,25 @@ function liveNew(id,name){return{id,name,what:LIVE_WHAT,facing:'user',running:fa
 // one finished rep: how deep, how straight, how long, and a picture of its bottom
 // was this the exercise? push-ups and dips: the shoulders move, the hands stay put. bench: the hands move.
 // squats: the hips move, the feet stay put. Also the body has to be in the right position.
-function realRep(E,rng,m){const d=k=>rng[k]?rng[k][1]-rng[k][0]:null;const sh=d('sh'),wr=d('wr'),hp=d('hp'),an=d('an');
-  if(E.sig==='arm'&&E.joint==='elbow'&&E!==LIVE_EX.bench){if(sh==null||sh<0.03)return false;if(wr!=null&&wr>0.6*sh)return false;
-    if(E===LIVE_EX.pushup&&!m.front&&m.ys?.an!=null&&m.bodyTilt>45)return false;
-    if(m.ys?.wr!=null&&m.ys?.sh!=null&&m.ys.wr<m.ys.sh)return false;return true}
-  if(E.sig==='pull'){if(sh==null||sh<0.04)return false;if(wr!=null&&wr>0.5*sh)return false;if(m.ys?.wr!=null&&m.ys?.sh!=null&&m.ys.wr>m.ys.sh)return false;return true}
-  if(E===LIVE_EX.bench){if(sh==null||wr==null)return true;return sh<0.6*wr}
-  if(E.sig==='leg'){if(hp==null)return false;if(hp<0.04)return false;if(an!=null&&an>0.5*hp)return false;return true}
+// Was this really the exercise? Checks what moved and what stayed still, and the body position.
+function realRep(E,rng,m){const d=k=>rng[k]?rng[k][1]-rng[k][0]:null;const sh=d('sh'),wr=d('wr'),hp=d('hp'),an=d('an');const P=m.pos||{};
+  const flat=P.torsoTilt!=null&&P.torsoTilt<40, upright=P.torsoTilt!=null&&P.torsoTilt>50&&P.hy!=null&&P.sy<P.hy;
+  const handsBelow=m.ys?.wr!=null&&m.ys?.sh!=null?m.ys.wr>m.ys.sh:true, handsAbove=m.ys?.wr!=null&&m.ys?.sh!=null?m.ys.wr<m.ys.sh:false;
+  if(E===LIVE_EX.pushup){if(sh==null||sh<0.03||(wr!=null&&wr>0.6*sh)||!handsBelow)return false;
+    if(P.wy!=null&&P.armLen&&P.wy<P.sy+0.4*P.armLen)return false;            // arms under the body at the top
+    if(!m.front&&P.torsoTilt!=null&&!flat)return false;                    // from the side the body must be horizontal
+    if(!m.front&&m.ys?.an!=null&&m.bodyTilt>45)return false;return true}
+  if(E===LIVE_EX.dips){if(sh==null||sh<0.03||(wr!=null&&wr>0.6*sh)||!handsBelow)return false;
+    if(P.torsoTilt!=null&&P.torsoTilt<35)return false;                       // upright-ish body, not lying
+    if(m.ys?.an!=null&&an!=null&&an<0.5*sh)return false;return true}         // the whole body moves with the shoulders (feet off the floor)
+  if(E.sig==='pull'){if(sh==null||sh<0.04||(wr!=null&&wr>0.5*sh)||!handsAbove)return false;
+    if(P.hy!=null&&P.hy<P.sy)return false;return true}                       // hanging: hips below shoulders
+  if(E===LIVE_EX.bench){if(wr==null||wr<0.03)return false;if(sh!=null&&sh>0.6*wr)return false;
+    if(P.torsoTilt!=null&&!flat)return false;if(!handsAbove)return false;return true}  // lying on the bench, pressing up
+  if(E.sig==='leg'){if(hp==null||hp<0.04)return false;if(an!=null&&an>0.5*hp)return false;
+    if(P.torsoTilt!=null&&!upright)return false;if(P.ky!=null&&P.hy!=null&&P.hy>P.ky)return false;return true} // standing tall again at the end
+  if(E.sig==='hip'){if(sh==null||sh<0.05)return false;if(an!=null&&an>0.5*sh)return false;
+    if(P.torsoTilt!=null&&P.torsoTilt>40)return false;return true}         // back to lying at the end, feet stay put
   return true}
 function repEnd(L,t,ok,why){const r=L.rep;if(r)L.log.push({ok,why:why||'',min:Math.round(r.min),line:r.lineMin<999?Math.round(r.lineMin):null,dur:Math.round((t-r.t0)/100)/10,snap:r.snap||null});L.rep=null}
 function liveStep(L,m,t){const E=LIVE_EX[L.id]||{kind:'general'};L.frames++;if(!m.visible){L.msg='צריך לראות את כל הגוף בפריים';L.cls='bad';L.lastT=t;return}L.seen++;
@@ -1414,7 +1436,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='emai
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='customIn'||e.target.id==='areaIn')){e.preventDefault();const id=e.target.id;(id==='areaIn'?addArea:addCustom)(e.target.value);save();render();setTimeout(()=>$('#'+id)?.focus(),0)}});
 render();
 /* ---------- updates: when a new version is published, show it and load it ---------- */
-const APP_VER='20261102220150';
+const APP_VER='20261102220552';
 function updScreen(html){let d=$('#upd');if(!d){d=document.createElement('div');d.id='upd';d.className='upd';document.body.append(d)}d.innerHTML=`<div class="upd-box" dir="rtl" lang="he">${html}</div>`}
 async function checkUpdate(){if(location.protocol!=='https:'||LIVE)return;let j;try{j=await (await fetch('version.json?t='+Date.now(),{cache:'no-store'})).json()}catch(e){return}
   if(!j?.ver||j.ver===APP_VER)return;const key='upd-'+j.ver;let n=0;try{n=+sessionStorage.getItem(key)||0;sessionStorage.setItem(key,n+1)}catch(e){n=9}
