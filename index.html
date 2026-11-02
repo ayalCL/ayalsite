@@ -64,6 +64,7 @@ body.has-bg .onbg,body.has-bg .onbg .muted,body.has-bg .onbg .eyebrow,body.has-b
 .live{position:fixed;inset:0;z-index:70;background:#000;color:#fff;overflow:hidden}
 .live video,.live canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .live.mirror video,.live.mirror canvas{transform:scaleX(-1)}
+.live #liveBg{object-fit:cover;filter:blur(22px) brightness(.5);transform:scale(1.15)}.live.mirror #liveBg{transform:scale(-1.15,1.15)}
 .live-top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 10px max(12px,env(safe-area-inset-left,0px));background:linear-gradient(rgba(0,0,0,.55),transparent)}
 .live-top .x{background:rgba(255,255,255,.18);color:#fff}
 .live-top .chip{background:rgba(255,255,255,.18);color:#fff;border-color:transparent}
@@ -71,6 +72,7 @@ body.has-bg .onbg,body.has-bg .onbg .muted,body.has-bg .onbg .eyebrow,body.has-b
 .live-hud{position:absolute;top:calc(64px + env(safe-area-inset-top,0px));inset-inline-start:max(14px,env(safe-area-inset-right,0px));text-shadow:0 2px 10px rgba(0,0,0,.7)}
 .live-big{font-family:var(--display);font-size:84px;font-weight:700;line-height:.9}
 .live-sub{font-size:14px;font-weight:700;opacity:.9}
+.upd{position:fixed;inset:0;z-index:90;background:rgba(232,235,238,.97);display:grid;place-items:center;padding:24px}.upd-box{max-width:340px;text-align:center;display:flex;flex-direction:column;gap:10px}.upd-spin{font-size:46px;animation:spin 1.4s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
 .live-msg.warn{background:rgba(214,150,20,.85)}
 .live-msg{position:absolute;left:12px;right:12px;bottom:calc(92px + env(safe-area-inset-bottom,0px));text-align:center;font-size:20px;font-weight:800;padding:10px 14px;border-radius:14px;background:rgba(0,0,0,.55)}
 .live-msg.good{background:rgba(29,122,76,.85)}
@@ -234,7 +236,7 @@ ul.clean{margin:0;padding:0 18px 0 0;display:flex;flex-direction:column;gap:4px}
 </div></div>
 <div id="sheetRoot"></div>
 <div id="live" class="live hidden" dir="rtl" lang="he">
-  <video id="liveVid" playsinline muted autoplay></video><canvas id="liveCan"></canvas>
+  <canvas id="liveBg"></canvas><video id="liveVid" playsinline muted autoplay></video><canvas id="liveCan"></canvas>
   <div class="live-top"><button class="x" data-act="livestop" aria-label="סגור">×</button><div class="live-name" id="liveName"></div><button class="chip small" data-act="liveflip">🔄 מצלמה</button></div>
   <div class="live-hud"><div class="live-big" id="liveBig">0</div><div class="live-sub" id="liveSub"></div></div>
   <div class="live-msg" id="liveMsg">מכין את השלד…</div>
@@ -744,11 +746,18 @@ function ptsOf(lm,ar){return i=>({x:lm[i].x*ar,y:lm[i].y,v:lm[i].visibility??1})
 function ang(a,b,c){const v1={x:a.x-b.x,y:a.y-b.y},v2={x:c.x-b.x,y:c.y-b.y};const d=(v1.x*v2.x+v1.y*v2.y)/((Math.hypot(v1.x,v1.y)*Math.hypot(v2.x,v2.y))||1);return Math.acos(Math.max(-1,Math.min(1,d)))*180/Math.PI}
 function tilt(a,b){return Math.abs(Math.atan2(b.y-a.y,Math.abs(b.x-a.x))*180/Math.PI)} // 0 = horizontal
 // one analysis step: returns {metric, ok, msg, visible}
-function liveMeasure(id,lm,ar){const E=LIVE_EX[id]||{kind:'general'};const sd=pickSide(lm);const g=ptsOf(lm,ar);
-  const S_=g(sd.s),El=g(sd.e),W=g(sd.w),H=g(sd.h),K=g(sd.k),A=g(sd.a),N=g(0);
-  const need=E.kind==='general'?[S_,H]:[S_,El,W,H,K,A];const visible=need.every(q=>q.v>0.4);
-  const elbow=ang(S_,El,W),knee=ang(H,K,A),hip=ang(S_,H,K),line=ang(S_,H,A),bodyTilt=tilt(S_,A);
-  return{visible,elbow,knee,hip,line,bodyTilt,noseAboveWrist:N.y<W.y,wristAboveShoulder:W.y<S_.y,inverted:A.y<H.y&&H.y<S_.y,hipBelowKnee:H.y>=K.y-0.02,feetUp:A.y<lm[sd.w].y-0.02}}
+// keep measuring the same side of the body; switch only when the other side is clearly better seen
+const SIDE_L={s:11,e:13,w:15,h:23,k:25,a:27},SIDE_R={s:12,e:14,w:16,h:24,k:26,a:28};
+function poseSide(lm,L){const vis=(...i)=>i.reduce((a,k)=>a+(lm[k]?.visibility??1),0);const l=vis(11,13,15,23,25,27),r=vis(12,14,16,24,26,28);
+  if(!L)return l>=r?SIDE_L:SIDE_R;if(!L.side)L.side=l>=r?'l':'r';else if(L.side==='l'&&r>l+1.2)L.side='r';else if(L.side==='r'&&l>r+1.2)L.side='l';
+  return L.side==='l'?SIDE_L:SIDE_R}
+function liveMeasure(id,lm,ar,L){const E=LIVE_EX[id]||{kind:'general'};const sd=poseSide(lm,L);const g=ptsOf(lm,ar);
+  const S_=g(sd.s),El=g(sd.e),W=g(sd.w),H=g(sd.h),K=g(sd.k),A0=g(sd.a),N=g(0);const T=0.35;const A=A0.v>T?A0:K;
+  // only the joints this exercise needs have to be in the frame
+  const need=E.kind==='general'?[S_,H]:E.kind==='pull'?[S_,El,W]:E.kind==='reps'?(E.joint==='elbow'?[S_,El,W,H]:E.joint==='knee'?[H,K,A0]:[S_,H,K]):[S_,El,W,H,K];
+  const visible=need.every(q=>q.v>T);
+  const elbow=ang(S_,El,W),knee=A0.v>T?ang(H,K,A0):180,hip=ang(S_,H,K),line=ang(S_,H,A),bodyTilt=tilt(S_,A);
+  return{visible,elbow,knee,hip,line,bodyTilt,noseAboveWrist:N.y<W.y,wristAboveShoulder:W.y<S_.y,inverted:A.y<H.y&&H.y<S_.y,hipBelowKnee:H.y>=K.y-0.02,feetUp:A.y<W.y-0.02}}
 // stop = the position is lost (clock stops). tip = still counts, but here is what to improve.
 function holdCheck(kind,m){const stop=[],tip=[];
   if(kind==='plank'){if(m.line<140)stop.push('האגן ירד מדי, יישר את הגוף');else if(m.line<162)tip.push('יישר עוד קצת את הגוף')}
@@ -770,15 +779,19 @@ function liveStep(L,m,t){const E=LIVE_EX[L.id]||{kind:'general'};L.frames++;if(!
   const note=x=>{L.issues[x]=(L.issues[x]||0)+1};
   if(E.kind==='reps'){let a=m[E.joint];L.smooth=L.smooth==null?a:L.smooth*0.6+a*0.4;a=L.smooth;
     if(!L.rep)L.rep={t0:t,min:999,lineMin:180};if(a<L.rep.min-2){L.rep.min=a;if(t-L.snapT>150){L.snapReq='rep';L.snapT=t}}L.rep.lineMin=Math.min(L.rep.lineMin,m.line);
-    const lo=E.inverse?a<E.down:a<E.down, hi=E.inverse?a>E.up:a>E.up;
+    // "up" = near the top you actually reach (arms that never fully lock on camera still count)
+    L.top=Math.max(L.top||0,a);const upT=Math.max(E.down+35,Math.min(E.up,L.top-15));
+    const lo=a<E.down, hi=a>upT;
     if(L.state==='up'){L.min=Math.min(L.min,a);
-      if(lo){L.state='down';L.formBad=false;L.formTip=false}
-      else if(hi&&L.min<E.up-30){L.bad++;repEnd(L,t,false,'חצי חזרה');note(E.joint==='knee'?'רד עמוק יותר':'רד עמוק יותר, טווח מלא');L.msg=E.joint==='knee'?'חצי חזרה: רד עמוק יותר':'חצי חזרה: רד עמוק יותר';L.cls='bad';L.min=999}
+      if(lo){L.state='down';L.downT=t;L.formBad=false;L.formTip=false}
+      else if(hi&&L.min<upT-30&&t-(L.countT||0)>600){L.bad++;repEnd(L,t,false,'חצי חזרה');note(E.joint==='knee'?'רד עמוק יותר':'רד עמוק יותר, טווח מלא');L.msg=E.joint==='knee'?'חצי חזרה: רד עמוק יותר':'חצי חזרה: רד עמוק יותר';L.cls='bad';L.min=999}
       else if(hi){L.min=999;L.rep={t0:t,min:999,lineMin:180}}}
     else{if(E.line&&m.line<140)L.formBad=true;else if(E.line&&m.line<158)L.formTip=true;
       if(E.depth&&!m.hipBelowKnee&&a<E.down+5){}
-      if(hi){L.state='up';L.min=999;
-        if(L.formBad){L.bad++;repEnd(L,t,false,'גוף לא ישר');note('גוף ישר לאורך כל החזרה');L.msg='✗ הגוף לא היה ישר';L.cls='bad'}
+      if(hi&&t-L.downT>250){L.state='up';L.min=999;
+        const dbl=t-(L.countT||0)<500;if(!dbl)L.countT=t;
+        if(dbl){L.rep=null}
+        else if(L.formBad){L.bad++;repEnd(L,t,false,'גוף לא ישר');note('גוף ישר לאורך כל החזרה');L.msg='✗ הגוף לא היה ישר';L.cls='bad'}
         else if(L.formTip){L.reps++;repEnd(L,t,true,'נספרה, הגוף לא לגמרי ישר');L.tips['שמור על גוף ישר יותר']=(L.tips['שמור על גוף ישר יותר']||0)+1;L.msg='✓ נספרה · נסה גוף ישר יותר';L.cls='warn'}
         else{L.reps++;repEnd(L,t,true);L.msg='✓ חזרה טובה';L.cls='good'}}}
     if(L.state==='down'&&E.line&&m.line<140){L.msg='יישר את הגוף!';L.cls='bad'}
@@ -836,7 +849,8 @@ function liveHud(){const L=LIVE;if(!L)return;const E=LIVE_EX[L.id]||{kind:'gener
   $('#liveSub').textContent=E.kind==='hold'?`הכי ארוך: ${(L.bestHold/1000).toFixed(1)} שנ׳`:E.kind==='general'?'':`חזרות${L.bad?` · ${L.bad} לא נספרו`:''}`;
   const m=$('#liveMsg');m.textContent=L.msg||'';m.className='live-msg '+(L.cls||'')}
 async function startCamera(){const v=$('#liveVid');if(v.srcObject){v.srcObject.getTracks().forEach(t=>t.stop())}
-  const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:LIVE.facing,width:{ideal:720},height:{ideal:1280}},audio:false});
+  const portrait=innerHeight>=innerWidth;
+  const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:LIVE.facing,width:{ideal:portrait?720:1280},height:{ideal:portrait?1280:720},aspectRatio:{ideal:portrait?9/16:16/9}},audio:false});
   v.srcObject=st;await v.play().catch(()=>{});$('#live').classList.toggle('mirror',LIVE.facing==='user')}
 async function startLive(id,name){closeSheet();LIVE=liveNew(id,name||LIVE_EX[id]?.name||'תרגיל');const box=$('#live');box.classList.remove('hidden');
   $('#liveName').textContent=LIVE.name;LIVE.msg=LIVE_EX[id]?.tip||'צלם כך שכל הגוף ייכנס בפריים';LIVE.cls='';liveHud();
@@ -845,9 +859,11 @@ async function startLive(id,name){closeSheet();LIVE=liveNew(id,name||LIVE_EX[id]
   LIVE.msg='מוריד את השלד… (רק בפעם הראשונה)';liveHud();
   let pose;try{pose=await loadPose()}catch(e){console.warn(e);LIVE.msg='לא הצלחתי לטעון את השלד. בדוק חיבור לאינטרנט ונסה שוב.';LIVE.cls='bad';liveHud();return}
   if(!LIVE)return;LIVE.running=true;LIVE.msg=LIVE_EX[id]?.tip||'עמוד כך שכל הגוף ייראה';const v=$('#liveVid'),cv=$('#liveCan');let lastHud=0;
+  const bg=$('#liveBg'),bgx=bg.getContext('2d');let lastBg=0;
   const loop=()=>{if(!LIVE||!LIVE.running)return;const t=performance.now();
+    if(v.videoWidth&&t-lastBg>250){lastBg=t;const w=64,h=Math.round(64*v.videoHeight/v.videoWidth);if(bg.width!==w||bg.height!==h){bg.width=w;bg.height=h}bgx.drawImage(v,0,0,w,h)}
     if(v.readyState>=2&&v.videoWidth){try{const r=pose.detectForVideo(v,t);const lm=r?.landmarks?.[0];drawSkel(cv,lm,v.videoWidth,v.videoHeight);
-      if(lm){liveStep(LIVE,liveMeasure(LIVE.id,lm,v.videoWidth/v.videoHeight),t);if(LIVE.snapReq)takeSnap(LIVE,v)}else{LIVE.msg='לא רואה אותך. התרחק קצת מהמצלמה';LIVE.cls='bad'}}catch(e){console.warn(e)}}
+      if(lm){liveStep(LIVE,liveMeasure(LIVE.id,lm,v.videoWidth/v.videoHeight,LIVE),t);if(LIVE.snapReq)takeSnap(LIVE,v)}else{LIVE.msg='לא רואה אותך. התרחק קצת מהמצלמה';LIVE.cls='bad'}}catch(e){console.warn(e)}}
     if(t-lastHud>120){liveHud();lastHud=t}LIVE.raf=requestAnimationFrame(loop)};loop()}
 function stopLive(){if(!LIVE)return;LIVE.running=false;cancelAnimationFrame(LIVE.raf);const v=$('#liveVid');if(v.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null}$('#live').classList.add('hidden')}
 function liveResult(L){const E=LIVE_EX[L.id]||{kind:'general'};const top=Object.entries(L.issues).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
@@ -1349,6 +1365,18 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='codeI
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='emailIn'||e.target.id==='nameIn')){e.preventDefault();$('[data-act=sendlink]')?.click()}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='customIn'||e.target.id==='areaIn')){e.preventDefault();const id=e.target.id;(id==='areaIn'?addArea:addCustom)(e.target.value);save();render();setTimeout(()=>$('#'+id)?.focus(),0)}});
 render();
+/* ---------- updates: when a new version is published, show it and load it ---------- */
+const APP_VER='20261102211811';
+function updScreen(html){let d=$('#upd');if(!d){d=document.createElement('div');d.id='upd';d.className='upd';document.body.append(d)}d.innerHTML=`<div class="upd-box" dir="rtl" lang="he">${html}</div>`}
+async function checkUpdate(){if(location.protocol!=='https:'||LIVE)return;let j;try{j=await (await fetch('version.json?t='+Date.now(),{cache:'no-store'})).json()}catch(e){return}
+  if(!j?.ver||j.ver===APP_VER)return;const key='upd-'+j.ver;let n=0;try{n=+sessionStorage.getItem(key)||0;sessionStorage.setItem(key,n+1)}catch(e){n=9}
+  if(n<2){updScreen('<div class="upd-spin">🔄</div><div class="t">האפליקציה מתעדכנת…</div><p class="small muted">רגע אחד, הכל שמור.</p>');
+    try{const r=await navigator.serviceWorker?.getRegistration();await r?.update()}catch(e){}
+    const q=new URLSearchParams(location.search);q.set('v',j.ver);setTimeout(()=>location.replace(location.pathname+'?'+q),700)}
+  else updScreen('<div class="upd-spin">🛠️</div><div class="t">האפליקציה מתעדכנת עכשיו</div><p class="small muted">זה לוקח כמה דקות. נסה שוב בעוד 5 דקות. ההתקדמות שלך שמורה.</p><button class="btn block" onclick="location.reload()">נסה שוב</button><button class="btn block ghost" onclick="document.getElementById(\'upd\').remove()">המשך בינתיים</button>')}
+(()=>{const q=new URLSearchParams(location.search);if(q.get('v')){if(q.get('v')===APP_VER)setTimeout(()=>toast('✨ האפליקציה עודכנה'),800);q.delete('v');history.replaceState(null,'',location.pathname+(q.toString()?'?'+q:''))}})();
+setTimeout(checkUpdate,1500);setInterval(checkUpdate,10*60*1000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpdate()});
 if('serviceWorker' in navigator&&location.protocol==='https:'){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
 </script>
 </body>
