@@ -77,7 +77,8 @@ body.has-bg .onbg,body.has-bg .onbg .muted,body.has-bg .onbg .eyebrow,body.has-b
 .live-msg.bad{background:rgba(185,58,44,.85)}
 .live-bottom{position:absolute;left:0;right:0;bottom:0;padding:12px max(16px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:linear-gradient(transparent,rgba(0,0,0,.6))}
 .exgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.exgrid .sport{min-height:0;padding:14px 8px}
+.exgrid .sport{min-height:0;padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.totals{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.tot{background:var(--surface-2);border-radius:14px;padding:10px 12px}.tot .disp{font-size:40px;line-height:1}
 .fixc{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface)}.fixc summary{cursor:pointer;list-style-position:inside}.fixc[open] summary{margin-bottom:6px}.fixc .small{margin-top:4px}
 .drillc{background:var(--accent-soft)}.exgrid .disp{font-size:17px;line-height:1.2}
 .exgrid .sport{min-height:0;padding:12px 8px;text-align:center;align-items:center}
@@ -438,7 +439,8 @@ function aiFail(e){if(e?.code==='not_granted')return 'צריך להתחבר מח
   if(e?.code==='rate_limited')return 'יותר מדי בקשות כרגע. נסה שוב בעוד דקה.';
   return 'משהו השתבש בחיבור למאמן. נסה שוב.'}
 function profile(){const g=[...S.goalChips,S.goals].filter(Boolean).join(', ');
-  return `תחומי חיים: ${S.areas.map(a=>AREAS[a]?.name).join(', ')}. ספורט: ${S.sports.map(k=>SPORTS[k].name).join(', ')||'אין'}. מתחיל עם: ${focusName()}. ${S.areas.includes('sleep')?`שינה: רוצה לישון ב-${S.bed} ולקום ב-${S.wake}. `:''}${S.areas.includes('screen')?`זמן מסך היום כ-${S.screenNow} שעות, יעד ${S.screenGoal}. `:''}${S.areas.includes('study')&&S.studyWhat?`לימודים: ${S.studyWhat}. `:''}${S.areas.includes('language')?`לומד שפה חדשה: ${S.newLang||'לא צוין איזו'}, רמה: ${S.langLevel||'לא צוינה'}. `:''}`+` מטרות: ${g||'עוד לא נאמר'}. רמה: ${S.level||'לא נאמר'}. זמין ${S.days} ימים בשבוע, ${S.minutes} דק׳ לאימון${S.when?', בעיקר ב'+S.when:''}. מה גורם לו לוותר: ${S.quit.join(', ')||'לא נאמר'}. ניסיון קודם: ${S.past||'לא נאמר'}. שעת check-in: ${S.checkin}. שפה: ${S.lang==='en'?'אנגלית':'עברית'}.${metricsLine()}`}
+  return `תחומי חיים: ${S.areas.map(a=>AREAS[a]?.name).join(', ')}. ספורט: ${S.sports.map(k=>SPORTS[k].name).join(', ')||'אין'}. מתחיל עם: ${focusName()}. ${S.areas.includes('sleep')?`שינה: רוצה לישון ב-${S.bed} ולקום ב-${S.wake}. `:''}${S.areas.includes('screen')?`זמן מסך היום כ-${S.screenNow} שעות, יעד ${S.screenGoal}. `:''}${S.areas.includes('study')&&S.studyWhat?`לימודים: ${S.studyWhat}. `:''}${S.areas.includes('language')?`לומד שפה חדשה: ${S.newLang||'לא צוין איזו'}, רמה: ${S.langLevel||'לא צוינה'}. `:''}`+` מטרות: ${g||'עוד לא נאמר'}. רמה: ${S.level||'לא נאמר'}. זמין ${S.days} ימים בשבוע, ${S.minutes} דק׳ לאימון${S.when?', בעיקר ב'+S.when:''}. מה גורם לו לוותר: ${S.quit.join(', ')||'לא נאמר'}. ניסיון קודם: ${S.past||'לא נאמר'}. שעת check-in: ${S.checkin}. שפה: ${S.lang==='en'?'אנגלית':'עברית'}.${metricsLine()}${totalsLine()}`}
+function totalsLine(){const T=S.totals||{};const p=Object.keys(T).filter(id=>LIVE_EX[id]).map(id=>`${LIVE_EX[id].name}: ${LIVE_EX[id].kind==='hold'?T[id].sec+' שנ׳ (שיא '+T[id].best+')':T[id].reps+' חזרות (שיא בסט '+T[id].best+')'}`);return p.length?' סה״כ באפליקציה: '+p.join('; ')+'.':''}
 function metricsLine(){const M=S.metrics||{};const parts=Object.keys(M).filter(k=>M[k]?.length).map(k=>{const m=(SPORTS[k]||AREAS[k])?.metric;const E=M[k];return `${m?.label||k}: ${E[E.length-1].v}${E.length>1?` (קודם ${E[0].v})`:''}`});return parts.length?' מדדים שהוא דיווח: '+parts.join('; ')+'.':''}
 const LANGLINE=()=>S.lang==='en'?'Always answer in English.':'ענה תמיד בעברית.';
 function activeInj(){return S.injuries.filter(i=>i.active)}
@@ -760,7 +762,7 @@ function holdCheck(kind,m){const stop=[],tip=[];
   if(kind==='handstand'){if(!m.inverted)stop.push('עלה לעמידת ידיים');else{if(m.elbow<135)stop.push('ידיים נעולות');else if(m.elbow<155)tip.push('נסה לנעול את המרפקים');if(m.line<140)stop.push('הגוף נשבר, יישר אותו');else if(m.line<160)tip.push('פחות קשת בגב')}}
   return{stop,tip}}
 let LIVE=null;
-function liveNew(id,name){return{id,name,facing:'user',running:false,reps:0,bad:0,state:'up',min:999,max:0,partial:false,holdMs:0,bestHold:0,cur:0,lastT:0,issues:{},smooth:null,msg:'',msgT:0,frames:0,seen:0,log:[],rep:null,attempts:[],hsnaps:[],snapT:0,cleanMs:0,lostMs:0,tips:{},sm:{}}}
+function liveNew(id,name){return{id,name,what:LIVE_WHAT,facing:'user',running:false,reps:0,bad:0,state:'up',min:999,max:0,partial:false,holdMs:0,bestHold:0,cur:0,lastT:0,issues:{},smooth:null,msg:'',msgT:0,frames:0,seen:0,log:[],rep:null,attempts:[],hsnaps:[],snapT:0,cleanMs:0,lostMs:0,tips:{},sm:{}}}
 // one finished rep: how deep, how straight, how long, and a picture of its bottom
 function repEnd(L,t,ok,why){const r=L.rep;if(r)L.log.push({ok,why:why||'',min:Math.round(r.min),line:Math.round(r.lineMin),dur:Math.round((t-r.t0)/100)/10,snap:r.snap||null});L.rep=null}
 function liveStep(L,m,t){const E=LIVE_EX[L.id]||{kind:'general'};L.frames++;if(!m.visible){L.msg='צריך לראות את כל הגוף בפריים';L.cls='bad';L.lastT=t;return}L.seen++;
@@ -855,26 +857,52 @@ function liveResult(L){const E=LIVE_EX[L.id]||{kind:'general'};const top=Object.
   else{const tot=L.reps+L.bad;const tipN=L.log.filter(r=>r.ok&&r.why).length;score=tot?Math.max(1,Math.round(10*(L.reps-tipN*0.3)/tot)):0;headline=`${L.reps} חזרות נספרו${L.bad?`, ${L.bad} לא נספרו`:''}`}
   const tipList=Object.entries(L.tips).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).filter(x=>!top.includes(x));
   return{score,headline,fix:[...top,...tipList].slice(0,3),good:E.kind==='hold'?(L.bestHold>=1000?[`החזקת ${(L.bestHold/1000).toFixed(1)} שנ׳`]:[]):(L.reps?[`${L.reps} חזרות בטווח מלא`]:[])}}
-let LAST_LIVE=null;
-function finishLive(){const L=LIVE;if(!L)return;stopLive();const R=liveResult(L);LIVE=null;LAST_LIVE={L,R,entry:null};
+let LAST_LIVE=null,LIVE_WHAT='';
+// how much of each exercise was done in the app, counted only from good reps / good hold time
+function addTotals(L){const E=LIVE_EX[L.id];if(!E||E.kind==='general')return;const T=S.totals||(S.totals={});const x=T[L.id]||(T[L.id]={reps:0,sec:0,sessions:0,best:0,today:{}});
+  const d=today();if(E.kind==='hold'){const sec=Math.round(L.holdMs/100)/10;if(sec<0.5)return;x.sec=Math.round((x.sec+sec)*10)/10;x.best=Math.max(x.best,Math.round(L.bestHold/100)/10);x.today={[d]:Math.round(((x.today?.[d]||0)+sec)*10)/10}}
+  else{if(!L.reps)return;x.reps+=L.reps;x.best=Math.max(x.best,L.reps);x.today={[d]:(x.today?.[d]||0)+L.reps}}
+  x.sessions++;x.last=d;save()}
+function totalsCard(){const T=S.totals||{};const ids=Object.keys(T).filter(id=>LIVE_EX[id]);
+  if(!ids.length)return '';const d=today();
+  ids.sort((a,b)=>(T[b].last||'').localeCompare(T[a].last||''));
+  return `<section class="card"><div class="eyebrow">כמה עשית באפליקציה</div>
+   <div class="totals">${ids.map(id=>{const x=T[id],E=LIVE_EX[id],h=E.kind==='hold';const td=x.today?.[d];
+     return `<div class="tot"><div class="small muted">${esc(E.name)}</div><div class="disp">${h?fmtSec(x.sec):x.reps}</div>
+      <div class="small">${h?'זמן החזקה':'חזרות'}${td?` · היום ${h?fmtSec(td):td}`:''}</div><div class="small muted">שיא: ${h?x.best+' שנ׳':x.best+' בסט'}</div></div>`}).join('')}</div>
+   <p class="small muted" style="margin:0">נספר רק מה שעשית מול המצלמה בטכניקה טובה.</p></section>`}
+function homeTotals(){const T=S.totals||{};const ids=Object.keys(T).filter(id=>LIVE_EX[id]).slice(0,4);if(!ids.length)return '';
+  return `<div class="row" style="flex-wrap:wrap;gap:6px">${ids.map(id=>`<span class="chip small">${esc(LIVE_EX[id].name)}: ${LIVE_EX[id].kind==='hold'?fmtSec(T[id].sec):T[id].reps}</span>`).join('')}</div>`}
+function fmtSec(v){v=Number(v)||0;return v>=60?`${Math.floor(v/60)}:${String(Math.round(v%60)).padStart(2,'0')}`:`${Math.round(v)} שנ׳`}
+function openLiveIntro(id,name){const E=LIVE_EX[id];const nm=name||E?.name||'תרגיל';
+  sheet(`${head('הראה למאמן',esc(nm))}
+   <div class="banner">📱 ${esc(E?.tip||'הנח את הטלפון כך שכל הגוף ייכנס בפריים, ואז התרחק עד שהשלד מופיע על כל הגוף.')}</div>
+   <label class="small" for="liveWhat"><b>מה אתה מנסה לעשות?</b> (לא חובה)</label>
+   <textarea id="liveWhat" rows="3" placeholder="${esc(E?.kind==='hold'?'למשל: ניסיון ראשון להחזקה של 5 שניות, הרגליים עוד לא ישרות':E?'למשל: סט של 10, מנסה לרדת עמוק יותר':'למשל: בולדר V3, מנסה להגיע לאחיזה הגבוהה עם הרגל השמאלית גבוה')}"></textarea>
+   <p class="small muted" style="margin:0">ככה המאמן יבין מה לבדוק ויתן משוב מדויק יותר.</p>
+   <button class="btn block" data-act="livestart" data-id="${esc(id)}" data-name="${esc(nm)}">פתח מצלמה</button>`)}
+function finishLive(){const L=LIVE;if(!L)return;stopLive();const R=liveResult(L);LIVE=null;LAST_LIVE={L,R,entry:null};addTotals(L);
   if(L.seen>5&&R.score!=null){const k='live|'+L.id;const e={date:today(),activity:L.name,score:R.score,good:R.good,fix:R.fix,drill:'',cue:'',live:true,metric:R.headline};(S.hist[k]||(S.hist[k]=[])).push(e);LAST_LIVE.entry=e;save()}
   sheet(`${head('בדיקה חיה',esc(L.name))}
    <div class="card">${R.score!=null?`<div class="score">${ring(R.score)}<div><div class="t">${esc(R.headline)}</div></div></div>`:`<div class="t">${esc(R.headline)}</div>`}
    ${R.fix.length?`<div id="liveLocalFix"><div class="t" style="color:var(--accent)">מה לשפר בפעם הבאה</div><ul class="clean">${R.fix.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:L.seen>5?'<div class="small" style="color:var(--good)">לא זיהיתי טעויות. כל הכבוד!</div>':'<div class="small muted">לא הספקתי לראות אותך מספיק. נסה שוב, כשכל הגוף בפריים.</div>'}</div>
+   ${(()=>{const x=S.totals?.[L.id];const E=LIVE_EX[L.id];if(!x||!E||E.kind==='general')return '';const h=E.kind==='hold';
+     return `<div class="banner">📊 סה״כ ${esc(E.name)} באפליקציה: <b>${h?fmtSec(x.sec):x.reps+' חזרות'}</b>${(h?L.bestHold/1000>=x.best-0.05&&L.bestHold>=1000:L.reps>=x.best&&L.reps>0)&&x.sessions>1?' · 🏆 שיא חדש!':''}</div>`})()}
    <div id="liveDeep"></div>
+   ${L.what?`<div class="small muted"><b>מה ניסית:</b> ${esc(L.what)}</div>`:''}
    ${L.seen>5?`<button class="btn block" id="liveDeepBtn" data-act="livedeep">ניתוח מעמיק מהמאמן 🔍</button><p class="small muted" id="liveDeepNote" style="margin:0">המאמן יקבל את המדידות ו-${pickSnaps(L).length||'כמה'} תמונות מרגעי המפתח.</p>`:''}
    <button class="btn block ghost" data-act="liveagain" data-id="${esc(L.id)}" data-name="${esc(L.name)}">נסה שוב</button>`)}
 function openLivePicker(){sheet(`${head('הראה למאמן','מה אתה מבצע?')}
    <div class="addrow"><input type="text" id="liveQ" placeholder="חפש תרגיל, למשל: פרונט לבר"><button class="btn" type="button" data-act="livefind">חפש</button></div>
    <div id="liveFindOut"></div>
-   <div class="eyebrow">בסיס</div><div class="exgrid">${LIVE_BASE.map(id=>`<button class="sport" type="button" data-act="livego" data-id="${id}"><span class="disp">${esc(LIVE_EX[id].name)}</span></button>`).join('')}</div>
-   <div class="eyebrow">החזקות וסקילים</div><div class="exgrid">${LIVE_MORE.map(id=>`<button class="sport" type="button" data-act="livego" data-id="${id}"><span class="disp">${esc(LIVE_EX[id].name)}</span></button>`).join('')}</div>
+   <div class="eyebrow">בסיס</div><div class="exgrid">${LIVE_BASE.map(id=>`<button class="sport" type="button" data-act="livego" data-id="${id}"><span class="disp">${esc(LIVE_EX[id].name)}</span>${S.totals?.[id]?`<span class="small muted">${S.totals[id].reps} סה״כ</span>`:''}</button>`).join('')}</div>
+   <div class="eyebrow">החזקות וסקילים</div><div class="exgrid">${LIVE_MORE.map(id=>`<button class="sport" type="button" data-act="livego" data-id="${id}"><span class="disp">${esc(LIVE_EX[id].name)}</span>${S.totals?.[id]?`<span class="small muted">${fmtSec(S.totals[id].sec)} סה״כ</span>`:''}</button>`).join('')}</div>
    <p class="small muted">המצלמה נפתחת והשלד מתיישב על הגוף. השלד רץ בטלפון והסרטון לא נשמר. תמונות מרגעי המפתח נשלחות למאמן רק אם תבקש ניתוח מעמיק.</p>`)}
 async function liveDeep(){const X=LAST_LIVE;if(!X)return;const {L,R}=X;const box=$('#liveDeep');const btn=$('#liveDeepBtn');
   if(!AI||!IMG){box.innerHTML='<div class="banner">ניתוח מעמיק עובד כשאתה מחובר לחשבון.</div>';return}
   btn?.remove();$('#liveDeepNote')?.remove();box.innerHTML='<p class="muted">המאמן עובר על החזרות והתמונות… (עד דקה)</p>';
   const snaps=pickSnaps(L);const blobs=(await Promise.all(snaps.map(s=>s.p))).filter(Boolean);
-  let r;try{r=await AI.json(`אתה מאמן מומחה ברמה עולמית לכוח וקליסטניקס. המתאמן עשה עכשיו בדיקה חיה באפליקציה: ${L.name}. מעקב שלד (MediaPipe) מדד כל חזרה או החזקה.
+  let r;try{r=await AI.json(`אתה מאמן מומחה ברמה עולמית לכוח וקליסטניקס. המתאמן עשה עכשיו בדיקה חיה באפליקציה: ${L.name}.${L.what?` הוא הסביר מה ניסה לעשות: "${L.what}". התייחס לזה ישירות: האם הצליח, מה מנע ממנו, ומה הצעד הבא למטרה הזו.`:''} מעקב שלד (MediaPipe) מדד כל חזרה או החזקה.
 ${liveStats(L)}
 סיכום האפליקציה: ${R.headline}.${R.fix.length?' טעויות שזוהו אוטומטית: '+R.fix.join(', ')+'.':''}
 ${blobs.length?`מצורפות ${blobs.length} תמונות מרגעי מפתח, לפי הסדר: ${snaps.slice(0,blobs.length).map((s,i)=>`${i+1}) ${s.label}`).join('; ')}.`:''}
@@ -916,7 +944,7 @@ function homeView(){const h=new Date().getHours();const hi=h<12?'בוקר טוב
    ${inj.length?`<div class="banner bad">שים לב: ${esc(REG[inj[0].region].n)} ${esc(inj[0].side)} בפציעה. דלג על כל תרגיל שמכאיב שם.</div>`:''}
    <div>${items.map(([t,d],i)=>taskRow(t,d,i,done)).join('')}</div>
    <input type="file" id="proofIn" accept="image/*,video/*" class="hidden"></section>
-  ${hasSport()?`<section class="card"><div class="eyebrow">בדיקה חיה 🦴</div><h3>הראה למאמן איך אתה מבצע</h3><button class="btn block" data-act="live">פתח מצלמה עם שלד</button></section>`:''}
+  ${hasSport()?`<section class="card"><div class="eyebrow">בדיקה חיה 🦴</div><h3>הראה למאמן איך אתה מבצע</h3>${homeTotals()}<button class="btn block" data-act="live">פתח מצלמה עם שלד</button></section>`:''}
   ${reportCard()}
   <section class="card"><div class="row between"><div class="eyebrow">צעדים היום</div><span class="small muted num">יעד ${S.stepGoal.toLocaleString('he-IL')}</span></div>
    ${(()=>{const st=S.steps[today()]||0,pc=Math.min(100,Math.round(st/S.stepGoal*100));return `<div class="row between" style="align-items:flex-end"><span class="disp" style="font-size:52px">${st.toLocaleString('he-IL')}</span><span class="small ${pc>=100?'':'muted'}" style="${pc>=100?'color:var(--good);font-weight:700':''}">${pc>=100?'עברת את היעד!':pc+'% מהיעד'}</span></div>
@@ -1001,7 +1029,7 @@ function progressView(){const areaCards=nonSport().map(areaCard).join('');
   <div class="eyebrow" style="margin-top:6px">ספורט</div>
   <div class="tabs">${S.sports.map(s=>`<button class="chip" data-act="psport" data-k="${s}" aria-pressed="${s===S.psport}">${SPORTS[s].name}</button>`).join('')}</div>
   ${metricCard(S.psport,m.label,m)}
-  <section class="card"><div class="eyebrow">בדיקה חיה 🦴</div><h3>הראה למאמן איך אתה מבצע</h3><p class="small muted">שלד על הגוף, ספירת חזרות טובות וזמן החזקה, ישר מהמצלמה.</p><button class="btn block" data-act="live">פתח בדיקה חיה</button></section>
+  ${totalsCard()}<section class="card"><div class="eyebrow">בדיקה חיה 🦴</div><h3>הראה למאמן איך אתה מבצע</h3><p class="small muted">שלד על הגוף, ספירת חזרות טובות וזמן החזקה, ישר מהמצלמה.</p><button class="btn block" data-act="live">פתח בדיקה חיה</button></section>
   <section class="card"><div class="eyebrow">בדיקת טכניקה מסרטון</div><h3>שלח סרטון למאמן</h3>
    <div class="tabs">${sp.ex.map(x=>`<button class="chip" data-act="ex" data-x="${esc(x)}" aria-pressed="${x===S.ex}">${esc(x)}</button>`).join('')}</div>
    <div class="banner">טיפ לצילום: ${esc(TIPS[S.ex]||'צלם מהצד, כל הגוף בפריים')}</div>
@@ -1253,7 +1281,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   case'profile':openProfile();break;
   case'live':openLivePicker();break;
   case'livefind':liveFind();break;
-  case'livego':startLive(t.dataset.id,t.dataset.name);break;
+  case'livego':openLiveIntro(t.dataset.id,t.dataset.name);break;
+  case'livestart':{const w=($('#liveWhat')?.value||'').trim();LIVE_WHAT=w;startLive(t.dataset.id,t.dataset.name)}break;
   case'livestop':stopLive();LIVE=null;break;
   case'livedone':finishLive();break;
   case'liveagain':startLive(t.dataset.id,t.dataset.name);break;
