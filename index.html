@@ -62,7 +62,8 @@ body.has-bg .onbg,body.has-bg .onbg .muted,body.has-bg .onbg .eyebrow,body.has-b
 .rw[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
 .rw .sw{width:100%;height:28px;border-radius:8px}
 .live{position:fixed;inset:0;z-index:70;background:#000;color:#fff;overflow:hidden}
-.live video,.live canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.live video,.live canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.live #liveBg{display:none}.live.whole #liveBg{display:block}
 .live.mirror video,.live.mirror canvas{transform:scaleX(-1)}
 .live #liveBg{object-fit:cover;filter:blur(22px) brightness(.5);transform:scale(1.15)}.live.mirror #liveBg{transform:scale(-1.15,1.15)}
 .live-top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 10px max(12px,env(safe-area-inset-left,0px));background:linear-gradient(rgba(0,0,0,.55),transparent)}
@@ -867,7 +868,7 @@ function frameView(L,lm,v){const W=innerWidth,H=innerHeight,vw=v.videoWidth,vh=v
     if(pts.length>=4){const xs=pts.map(q=>q.x),ys=pts.map(q=>q.y);const x0=Math.min(...xs)-.03,x1=Math.max(...xs)+.03,y0=Math.min(...ys)-.05,y1=Math.max(...ys)+.04;
       const pos=(c,f)=>f>=1?.5:Math.max(0,Math.min(1,(c-f/2)/(1-f)));
       V.px+=(pos((x0+x1)/2,fx)-V.px)*.12;V.py+=(pos((y0+y1)/2,fy)-V.py)*.12}}
-  const fit=L.fullFrame?'contain':'cover';v.style.objectFit=fit;v.style.objectPosition=fit==='cover'?`${(V.px*100).toFixed(1)}% ${(V.py*100).toFixed(1)}%`:'50% 50%';
+  const fit=L.fullFrame?'contain':'cover';v.style.objectFit=fit;$('#live').classList.toggle('whole',fit==='contain');v.style.objectPosition=fit==='cover'?`${(V.px*100).toFixed(1)}% ${(V.py*100).toFixed(1)}%`:'50% 50%';
   return{fit,px:fit==='cover'?V.px:.5,py:fit==='cover'?V.py:.5}}
 function drawSkel(cv,lm,vw,vh,fv){const c=cv.getContext('2d');const W=cv.clientWidth,H=cv.clientHeight;if(cv.width!==W*devicePixelRatio){cv.width=W*devicePixelRatio;cv.height=H*devicePixelRatio}
   c.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);c.clearRect(0,0,W,H);if(!lm)return;
@@ -893,9 +894,11 @@ async function startCamera(){const v=$('#liveVid');if(v.srcObject){v.srcObject.g
   // use the most detail the camera offers (sharper when the picture is zoomed to fill the screen)
   try{const tr=best.getVideoTracks()[0];const cap=tr.getCapabilities?.();if(cap?.width?.max&&cap?.height?.max){const st0=tr.getSettings();if(st0.width*st0.height<cap.width.max*cap.height.max*0.5){const r=st0.width/st0.height,L_=1920;await tr.applyConstraints({width:{ideal:Math.round(r>=1?L_:L_*r)},height:{ideal:Math.round(r>=1?L_/r:L_)}}).catch(()=>{});await wait(300)}}}catch(e){}
   LIVE.res=v.videoWidth?`${v.videoWidth}×${v.videoHeight}`:'';
+  setTimeout(async()=>{try{if(!LIVE||v.srcObject!==best||Math.max(v.videoWidth,v.videoHeight)>=1200)return;const tr=best.getVideoTracks()[0];const r=v.videoWidth/v.videoHeight;
+    await tr.applyConstraints({width:{ideal:Math.round(r>=1?1920:1920*r)},height:{ideal:Math.round(r>=1?1920/r:1920)}});await wait(400);if(LIVE)LIVE.res=`${v.videoWidth}×${v.videoHeight}`}catch(e){}},1500);
   $('#live').classList.toggle('mirror',LIVE.facing==='user')}
 async function startLive(id,name){closeSheet();LIVE=liveNew(id,name||LIVE_EX[id]?.name||'תרגיל');const box=$('#live');box.classList.remove('hidden');
-  $('#liveName').textContent=LIVE.name;$('#liveFitBtn').textContent='⤢ כל הפריים';LIVE.msg=LIVE_EX[id]?.tip||'צלם כך שכל הגוף ייכנס בפריים';LIVE.cls='';liveHud();
+  $('#liveName').textContent=LIVE.name;$('#liveFitBtn').textContent='⤢ כל הפריים';$('#liveVid').style.objectFit='cover';$('#liveVid').style.objectPosition='50% 50%';$('#live').classList.remove('whole');LIVE.msg=LIVE_EX[id]?.tip||'צלם כך שכל הגוף ייכנס בפריים';LIVE.cls='';liveHud();
   try{if(!navigator.mediaDevices?.getUserMedia)throw{name:'NoCamera'};await startCamera()}
   catch(e){const m=e?.name==='NotAllowedError'?'אין גישה למצלמה. אשר גישה למצלמה בהגדרות הטלפון (ובאייפון: הגדרות → Safari → מצלמה) ונסה שוב.':'לא הצלחתי לפתוח את המצלמה.';LIVE.msg=m;LIVE.cls='bad';liveHud();return}
   LIVE.msg='מוריד את השלד… (רק בפעם הראשונה)';liveHud();
@@ -1409,7 +1412,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='emai
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='customIn'||e.target.id==='areaIn')){e.preventDefault();const id=e.target.id;(id==='areaIn'?addArea:addCustom)(e.target.value);save();render();setTimeout(()=>$('#'+id)?.focus(),0)}});
 render();
 /* ---------- updates: when a new version is published, show it and load it ---------- */
-const APP_VER='20261102214909';
+const APP_VER='20261102215241';
 function updScreen(html){let d=$('#upd');if(!d){d=document.createElement('div');d.id='upd';d.className='upd';document.body.append(d)}d.innerHTML=`<div class="upd-box" dir="rtl" lang="he">${html}</div>`}
 async function checkUpdate(){if(location.protocol!=='https:'||LIVE)return;let j;try{j=await (await fetch('version.json?t='+Date.now(),{cache:'no-store'})).json()}catch(e){return}
   if(!j?.ver||j.ver===APP_VER)return;const key='upd-'+j.ver;let n=0;try{n=+sessionStorage.getItem(key)||0;sessionStorage.setItem(key,n+1)}catch(e){n=9}
