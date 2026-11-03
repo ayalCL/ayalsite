@@ -776,7 +776,8 @@ function liveMeasure(id,lm,ar,L){const E=LIVE_EX[id]||{kind:'general'};const sd=
   const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);const armLen=dist(S_,El)+dist(El,W);
   const pos={ey:El.v>T?El.y:null,sy:S_.y,wy:W.v>T?W.y:(L?.wyLast??null),hy:H.v>T?H.y:null,ky:K.v>T?K.y:null,ay:A0.v>T?A0.y:null,armLen,torsoTilt:H.v>T?tilt(S_,H):null};
   const chin=ys.wr!=null?lm[0].y<ys.wr+0.01:(L?.wyLast!=null?lm[0].y<L.wyLast+0.01:false);
-  return{visible,front,sw,tl:tlv,syAvg,armBelow,elbowAvg,sig,ys,chin,pos,elbow,knee,hip,line,bodyTilt,noseAboveWrist:N.y<W.y,wristAboveShoulder:W.y<S_.y,inverted:A.y<H.y&&H.y<S_.y,hipBelowKnee:H.y>=K.y-0.02,feetUp:A.y<W.y-0.02}}
+  const noseY=(lm[0].visibility??1)>T?lm[0].y:null;
+  return{visible,front,sw,tl:tlv,syAvg,noseY,armBelow,elbowAvg,sig,ys,chin,pos,elbow,knee,hip,line,bodyTilt,noseAboveWrist:N.y<W.y,wristAboveShoulder:W.y<S_.y,inverted:A.y<H.y&&H.y<S_.y,hipBelowKnee:H.y>=K.y-0.02,feetUp:A.y<W.y-0.02}}
 // stop = the position is lost (clock stops). tip = still counts, but here is what to improve.
 function holdPose(kind,m){const P=m.pos||{};if(P.wy==null)return null;const arm=P.armLen||0.2;
   const below=P.wy>P.sy+0.4*arm, above=P.wy<P.sy-0.4*arm, feetUp=P.ay!=null&&P.ay<P.wy-0.02;
@@ -806,7 +807,7 @@ function liveNew(id,name){return{id,name,what:LIVE_WHAT,facing:'user',running:fa
 function realRep(E,rng,m){const d=k=>rng[k]?rng[k][1]-rng[k][0]:null;const sh=d('sh'),wr=d('wr'),hp=d('hp'),an=d('an');const P=m.pos||{};
   const flat=P.torsoTilt!=null&&P.torsoTilt<40, upright=P.torsoTilt!=null&&P.torsoTilt>50&&P.hy!=null&&P.sy<P.hy;
   const handsBelow=m.ys?.wr!=null&&m.ys?.sh!=null?m.ys.wr>m.ys.sh:true, handsAbove=m.ys?.wr!=null&&m.ys?.sh!=null?m.ys.wr<m.ys.sh:false;
-  if(E===LIVE_EX.pushup){const side=!m.front&&m.tl!=null&&(m.sw||0)<0.5*m.tl;if(sh==null||sh<0.02||(wr!=null&&wr>0.6*sh)||!handsBelow)return false;
+  if(E===LIVE_EX.pushup){const side=!m.front&&m.tl!=null&&(m.sw||0)<0.5*m.tl;if(sh==null||sh<0.02)return false;if(side&&((wr!=null&&wr>0.6*sh)||!handsBelow))return false;if(!side&&wr!=null&&wr>0.85*sh)return false;   // from the front: hands that travel with the shoulders = standing up, not a push-up
     if(!m.armSeen)return false;                                               // arms seen reaching down to the floor
     if(side&&P.wy!=null&&P.armLen&&P.wy<P.sy+0.3*P.armLen)return false;      // from the side: arms under the body at the top
     if(side&&P.torsoTilt!=null&&!flat)return false;                          // from the side the body must be horizontal
@@ -834,7 +835,7 @@ function liveStep(L,m,t){const E=LIVE_EX[L.id]||{kind:'general'};L.frames++;if(!
     let useFront=false;if(E===LIVE_EX.pushup){const sc=Math.max(m.sw||0,0.8*(m.tl||0));
       if(sc>0.02){useFront=true;L.swRef=L.swRef==null?sc:L.swRef*0.97+sc*0.03}else if(L.swRef)useFront=true;
       if(m.armBelow)L.armSeen=true}
-    let raw=useFront?-m.syAvg/L.swRef:m.sig;if(raw==null){L.msg='צריך לראות את '+(E.sig==='leg'?'המותניים, הברכיים והרגליים':'הכתפיים והידיים');L.cls='bad';return}
+    let raw=useFront?-(m.noseY!=null?(m.syAvg+m.noseY)/2:m.syAvg)/L.swRef:m.sig;if(raw==null){L.msg='צריך לראות את '+(E.sig==='leg'?'המותניים, הברכיים והרגליים':'הכתפיים והידיים');L.cls='bad';return}
     if(!useFront&&(E.sig==='arm'||E.sig==='pull')){L.sMax=Math.max((L.sMax||raw)*0.9985,raw);raw=raw/L.sMax}  // 1 = arms straight, as you stand right now
     L.smooth=L.smooth==null?raw:L.smooth*0.6+raw*0.4;const a=L.smooth,R=0.2;L.dbg=`${m.front?'מלפנים':'מהצד'} · עומק ${Math.max(0,Math.min(100,Math.round(useFront?(L.hiV!=null?(L.hiV-a)/0.45*100:0):(1-a)*100)))}%`;const ang_=E===LIVE_EX.pushup?(m.front?(m.elbowAvg??999):(m.elbow??999)):(E.joint==='elbow'&&m.elbowAvg!=null&&m.front?m.elbowAvg:m[E.joint]);
     if(!L.ph){L.ph='top';L.hiV=a;L.loV=a}
@@ -845,12 +846,13 @@ function liveStep(L,m,t){const E=LIVE_EX[L.id]||{kind:'general'};L.frames++;if(!
     else{if(a<L.loV){L.loV=a;if(t-L.snapT>150){L.snapReq='rep';L.snapT=t}}
       L.rep.min=Math.min(L.rep.min,ang_);if(m.chin)L.rep.chin=true;if(!m.front)L.rep.lineMin=Math.min(L.rep.lineMin,m.line);
       if(E.line&&!m.front){if(m.line<140)L.formBad=true;else if(m.line<158)L.formTip=true}
-      if(a>=L.loV+Math.max(R,0.7*(L.hiV-L.loV))&&t-L.downT>300){const drop=L.hiV-L.loV;L.ph='top';L.hiV=a;const full=E.sig==='pull'?(L.rep.chin||L.loV<=0.2):useFront?(drop>=0.45||L.rep.min<=100):(L.loV<=E.full||(E.joint==='elbow'&&L.rep.min<=100));const real=realRep(E,L.rep.rng||{},{...m,armSeen:L.armSeen,wyLast:L.wyLast});
+      if(a>=L.loV+Math.max(R,0.7*(L.hiV-L.loV))&&t-L.downT>300){const drop=L.hiV-L.loV;L.ph='top';L.hiV=a;const full=E.sig==='pull'?(L.rep.chin||L.loV<=0.2):useFront?(drop>=0.45||L.rep.min<=100||(L.typ!=null&&drop>=Math.max(0.28,0.7*L.typ))):(L.loV<=E.full||(E.joint==='elbow'&&L.rep.min<=100));const real=realRep(E,L.rep.rng||{},{...m,armSeen:L.armSeen,wyLast:L.wyLast});
         if(!real){L.rep=null;L.msg=useFront&&!L.armSeen?'לא רואה את הידיים. הרחק את הטלפון קצת, שהידיים על הרצפה ייכנסו לתמונה':`זה לא נראה כמו ${E.name}. ${E.tip}`;L.cls='bad'}
         else if(!full){L.bad++;repEnd(L,t,false,E.sig==='pull'?'הסנטר לא עבר את המוט':'חצי חזרה');note(E.sig==='pull'?'סנטר מעל המוט בכל חזרה':E.sig==='leg'?'רד עמוק יותר':'רד עמוק יותר, טווח מלא');L.msg=E.sig==='pull'?'עוד קצת! סנטר מעל המוט':'חצי חזרה: רד עמוק יותר';L.cls='bad'}
         else if(L.formBad){L.bad++;repEnd(L,t,false,'גוף לא ישר');note('גוף ישר לאורך כל החזרה');L.msg='✗ הגוף לא היה ישר';L.cls='bad'}
         else if(L.formTip){L.reps++;repEnd(L,t,true,'נספרה, הגוף לא לגמרי ישר');L.tips['שמור על גוף ישר יותר']=(L.tips['שמור על גוף ישר יותר']||0)+1;L.msg='✓ נספרה · נסה גוף ישר יותר';L.cls='warn'}
-        else{L.reps++;repEnd(L,t,true);L.msg='✓ חזרה טובה';L.cls='good'}}}
+        else{L.reps++;repEnd(L,t,true);L.msg='✓ חזרה טובה';L.cls='good'}
+        if(useFront&&full&&real){(L.drops||(L.drops=[])).push(drop);const d=L.drops.slice(-5).sort((x,y)=>x-y);L.typ=d[Math.floor(d.length/2)]}}}
     if(L.ph==='bottom'&&E.line&&!m.front&&m.line<140){L.msg='יישר את הגוף!';L.cls='bad'}
     return}
   if(E.kind==='pull'){const a=m.elbow;L.smooth=L.smooth==null?a:L.smooth*0.6+a*0.4;
@@ -1456,7 +1458,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='emai
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='customIn'||e.target.id==='areaIn')){e.preventDefault();const id=e.target.id;(id==='areaIn'?addArea:addCustom)(e.target.value);save();render();setTimeout(()=>$('#'+id)?.focus(),0)}});
 render();
 /* ---------- updates: when a new version is published, show it and load it ---------- */
-const APP_VER='20261103072621';
+const APP_VER='20261103074855';
 function updScreen(html){let d=$('#upd');if(!d){d=document.createElement('div');d.id='upd';d.className='upd';document.body.append(d)}d.innerHTML=`<div class="upd-box" dir="rtl" lang="he">${html}</div>`}
 async function checkUpdate(){if(location.protocol!=='https:'||LIVE)return;let j;try{j=await (await fetch('version.json?t='+Date.now(),{cache:'no-store'})).json()}catch(e){return}
   if(!j?.ver||j.ver===APP_VER)return;const key='upd-'+j.ver;let n=0;try{n=+sessionStorage.getItem(key)||0;sessionStorage.setItem(key,n+1)}catch(e){n=9}
