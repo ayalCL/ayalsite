@@ -458,26 +458,32 @@ const IOS_NOT_SAFARI=IS_IOS&&/CriOS|FxiOS|EdgiOS|OPiOS/.test(UA);
 let installEvt=null,INSTALLED=false;
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;render()});
 addEventListener('appinstalled',()=>{INSTALLED=true;installEvt=null;render()});
-function needInstall(){return (IS_IOS||IS_ANDROID)&&!standalone()&&!/[?&]browser=1/.test(location.search)}
+(()=>{try{if(/[?&]browser=1/.test(location.search))sessionStorage.setItem('plc-browser','1')}catch(e){}})();
+function needInstall(){let b=false;try{b=sessionStorage.getItem('plc-browser')==='1'}catch(e){}return (IS_IOS||IS_ANDROID)&&!standalone()&&!b&&!/[?&]browser=1/.test(location.search)}
 const SHARE_ICON='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-5px"><path d="M12 3v12M8 7l4-4 4 4"/><rect x="5" y="10" width="14" height="11" rx="2"/></svg>';
 const ADD_ICON='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-5px"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg>';
 function installView(){
   const head=`<div class="hero" style="padding-bottom:8px"><div class="eyebrow">PERSONAL LIFE COACH</div><h1 class="disp" style="margin-top:10px">קודם,<br><span>מתקינים.</span></h1>
    <p class="muted" style="max-width:34ch">האפליקציה עובדת מהאייקון במסך הבית, כמו כל אפליקציה. זה לוקח 10 שניות.</p></div>`;
-  if(INSTALLED)return head+`<div class="card"><div class="t">מותקן! ✓</div><p>פתח את <b>Life Coach</b> מהאייקון במסך הבית והמשך משם.</p></div>`;
+  const cont=`<p class="small" style="text-align:center;margin-top:6px"><a href="?browser=1" style="color:var(--muted)">להמשיך בינתיים בדפדפן ←</a></p>`;
+  if(INSTALLED)return head+`<div class="card"><div class="t">ההתקנה התחילה ✓</div><p>תוך כמה שניות יופיע <b>Life Coach</b> במסך הבית. פתח את האפליקציה משם.</p>
+   <p class="small"><b>לא רואה את האייקון?</b></p><ol class="small" style="margin:0;padding-right:20px;display:flex;flex-direction:column;gap:6px">
+   <li>חכה 10-20 שניות. בהרבה טלפונים ההתקנה לוקחת רגע.</li><li>חפש <b>Life Coach</b> ברשימת כל האפליקציות (החלקה למעלה במסך הבית).</li>
+   <li>אם הוא לא שם: חזור לכאן, לחץ על <b>⋮</b> למעלה בכרום ובחר <b>"הוסף למסך הבית"</b>.</li></ol>
+   <button class="btn block ghost" data-act="installagain" style="margin-top:10px">נסה להתקין שוב</button></div>`+cont;
   if(IN_APP||IOS_NOT_SAFARI)return head+`<div class="card"><div class="t">פתח את הקישור ב${IS_IOS?'-Safari':'כרום'}</div>
    <p class="small">מהדפדפן הזה אי אפשר להתקין. לחץ על ⋯ או על סמל הדפדפן, ובחר "פתח ב${IS_IOS?'-Safari':'כרום'}". או העתק את הכתובת:</p>
-   <input type="text" id="instUrl" readonly dir="ltr" value="${esc(location.origin+location.pathname)}" onclick="this.select()"></div>`;
+   <input type="text" id="instUrl" readonly dir="ltr" value="${esc(location.origin+location.pathname)}" onclick="this.select()"></div>`+cont;
   if(IS_ANDROID)return head+(installEvt
    ?`<button class="btn block" data-act="install" style="font-size:18px;padding:16px">התקן את האפליקציה</button><p class="small muted">אחרי ההתקנה, פתח מהאייקון במסך הבית.</p>`
    :`<div class="card"><div class="t">3 צעדים</div><ol style="margin:0;padding-right:20px;display:flex;flex-direction:column;gap:8px">
-     <li>לחץ על <b>⋮</b> למעלה בכרום</li><li>בחר <b>"התקן אפליקציה"</b> או <b>"הוסף למסך הבית"</b></li><li>פתח את <b>Life Coach</b> מהאייקון</li></ol></div>`);
+     <li>לחץ על <b>⋮</b> למעלה בכרום</li><li>בחר <b>"התקן אפליקציה"</b> או <b>"הוסף למסך הבית"</b></li><li>פתח את <b>Life Coach</b> מהאייקון</li></ol></div>`)+cont;
   return head+`<div class="card"><div class="t">3 צעדים באייפון</div><ol style="margin:0;padding-right:20px;display:flex;flex-direction:column;gap:10px;font-size:16px">
    <li>לחץ על כפתור השיתוף ${SHARE_ICON} בתחתית המסך</li>
    <li>גלול ובחר <b>"הוסף למסך הבית"</b> ${ADD_ICON}</li>
    <li>לחץ <b>"הוסף"</b>, ופתח את <b>Life Coach</b> מהאייקון</li></ol></div>
    <div class="banner">בכניסה הראשונה מהאייקון, התחבר עם <b>הקוד</b> שמגיע במייל.</div>
-   <div style="text-align:center;font-size:30px;color:var(--accent);margin-top:4px" aria-hidden="true">↓</div>`}
+   <div style="text-align:center;font-size:30px;color:var(--accent);margin-top:4px" aria-hidden="true">↓</div>`+cont}
 function render(){
   const app=$('#app');try{applyLook()}catch(e){}
   $('#nav').classList.toggle('hidden',S.stage!=='app');
@@ -1416,7 +1422,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   case'whatok':{const v=($('#whatIn')?.value||'').trim();const r=WHAT_RES;WHAT_RES=null;closeSheet();r&&r(v);break}
   case'whatcancel':{const r=WHAT_RES;WHAT_RES=null;closeSheet();r&&r(null);break}
   case'proof':PROOF_I=+t.dataset.i;{const inp=$('#proofIn');inp.value='';inp.click()}break;
-  case'install':if(installEvt){installEvt.prompt();installEvt.userChoice.then(c=>{if(c.outcome==='accepted'){INSTALLED=true}installEvt=null;render()})}break;
+  case'installagain':INSTALLED=false;render();break;
+    case'install':if(installEvt){installEvt.prompt();installEvt.userChoice.then(c=>{if(c.outcome==='accepted'){INSTALLED=true}installEvt=null;render()})}break;
   case'msave':{const k=t.dataset.k;const el=$('#mIn_'+k);const raw=(el?.value||'').trim();
     const m=(SPORTS[k]||AREAS[k])?.metric||{};const v=m.grade?raw.toUpperCase().replace(/\s+/g,''):raw.replace(',','.');
     if(!v||(m.grade?isNaN(gradeNum(v)):isNaN(Number(v)))){toast(m.grade?'כתוב דרגה, למשל V3':'כתוב מספר');break}
@@ -1471,7 +1478,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='emai
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='customIn'||e.target.id==='areaIn')){e.preventDefault();const id=e.target.id;(id==='areaIn'?addArea:addCustom)(e.target.value);save();render();setTimeout(()=>$('#'+id)?.focus(),0)}});
 render();
 /* ---------- updates: when a new version is published, show it and load it ---------- */
-const APP_VER='20261103113641';
+const APP_VER='20261103172033';
 function updScreen(html){let d=$('#upd');if(!d){d=document.createElement('div');d.id='upd';d.className='upd';document.body.append(d)}d.innerHTML=`<div class="upd-box" dir="rtl" lang="he">${html}</div>`}
 async function checkUpdate(){if(location.protocol!=='https:'||LIVE)return;let j;try{j=await (await fetch('version.json?t='+Date.now(),{cache:'no-store'})).json()}catch(e){return}
   if(!j?.ver||j.ver===APP_VER)return;const key='upd-'+j.ver;let n=0;try{n=+sessionStorage.getItem(key)||0;sessionStorage.setItem(key,n+1)}catch(e){n=9}
