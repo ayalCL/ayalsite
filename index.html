@@ -82,6 +82,10 @@ body.has-bg .onbg,body.has-bg .onbg .muted,body.has-bg .onbg .eyebrow,body.has-b
 .exgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .exgrid .sport{min-height:0;padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:2px}
 .totals{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.tot{background:var(--surface-2);border-radius:14px;padding:10px 12px}.tot .disp{font-size:40px;line-height:1}
+.coachcard{gap:12px}.coachav{width:46px;height:46px;border-radius:50%;background:var(--accent-soft);display:grid;place-items:center;font-size:24px;flex:none}
+.coachbubble{background:var(--surface-2);border-radius:16px 16px 16px 4px;padding:12px 14px;max-height:9.5em;overflow:hidden;position:relative;line-height:1.5}
+.homeform{display:flex;gap:8px}.homeform input{flex:1}
+.planlink{display:flex;justify-content:space-between;align-items:center;text-align:start;width:100%;cursor:pointer;font:inherit;color:inherit}
 .fixc{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface)}.fixc summary{cursor:pointer;list-style-position:inside}.fixc[open] summary{margin-bottom:6px}.fixc .small{margin-top:4px}
 .drillc{background:var(--accent-soft)}.exgrid .disp{font-size:17px;line-height:1.2}
 .exgrid .sport{min-height:0;padding:12px 8px;text-align:center;align-items:center}
@@ -226,8 +230,8 @@ ul.clean{margin:0;padding:0 18px 0 0;display:flex;flex-direction:column;gap:4px}
 
 <div id="app" dir="rtl" lang="he"></div>
 <nav class="nav hidden" id="nav" dir="rtl" lang="he"><div class="in">
-  <button data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>היום</button>
-  <button data-tab="coach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H9l-5 4z"/></svg>מאמן</button>
+  <button data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>בית</button>
+  <button data-tab="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="17" rx="2"/><path d="M8 9l2 2 4-4M8 15h8"/></svg>התוכנית</button>
   <button class="pain" id="painBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="5" r="2.5"/><path d="M12 8v7M8 11h8M12 15l-3 6M12 15l3 6"/></svg>משהו כואב?</button>
   <button data-tab="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19h16M6 15l4-5 4 3 5-7"/></svg>התקדמות</button>
 </div></nav>
@@ -488,13 +492,13 @@ function render(){
   const app=$('#app');try{applyLook()}catch(e){}
   $('#nav').classList.toggle('hidden',S.stage!=='app');
   $('#composer').classList.toggle('hidden',!(S.stage==='app'&&S.tab==='coach'));
-  document.querySelectorAll('.nav [data-tab]').forEach(b=>b.setAttribute('aria-current',b.dataset.tab===S.tab?'page':'false'));
+  document.querySelectorAll('.nav [data-tab]').forEach(b=>b.setAttribute('aria-current',b.dataset.tab===(S.tab==='coach'?'home':S.tab)?'page':'false'));
   clock();
   if(needInstall()){$('#nav').classList.add('hidden');$('#composer').classList.add('hidden');app.innerHTML=installView();return}
   if(BOOT&&S.stage!=='app'){app.innerHTML=`<div class="hero" style="text-align:center"><div class="brand" style="font-size:30px">Personal <b>Life</b> Coach</div><p class="muted" style="margin-top:18px">טוען את החשבון שלך…</p></div>`;return}
   if(S.stage==='login')app.innerHTML=loginView();
   else if(S.stage==='onb')app.innerHTML=onbView();
-  else app.innerHTML=topBar()+(S.tab==='home'?homeView():S.tab==='coach'?coachView():progressView());
+  else app.innerHTML=topBar()+(S.tab==='home'?homeView():S.tab==='plan'?planView():S.tab==='coach'?coachView():progressView());
   aiBadge();
   if(S.stage==='app'&&S.tab==='coach'){renderSugg();scrollTo(0,document.body.scrollHeight)}
 }
@@ -1051,25 +1055,18 @@ function energyLine(){const e=S.energy[today()];
   if(e==='high')return 'אנרגיה גבוהה! תוסיף סט אחד למשימה המרכזית, אבל לא יותר. שומרים כוח למחר.';
   return 'איך אתה מרגיש היום? זה משנה את התוכנית.'}
 function homeView(){const h=new Date().getHours();const hi=h<12?'בוקר טוב':h<18?'צהריים טובים':'ערב טוב';
-  const {items,fromReport,fromAI,note}=planItems();const done=S.done[today()]||{};const inj=activeInj();
-  const nDone=items.filter((_,i)=>done[i]).length;
-  return `<div class="stack">
+    return `<div class="stack">
   <div class="onbg"><div class="eyebrow">${new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'})}</div><h1 class="disp" style="font-size:48px">${hi}${S.name?', '+esc(S.name):''}</h1></div>
   ${S.avatar?'':`<section class="card"><div class="row" style="gap:12px;flex-wrap:nowrap">${avatarHtml(false)}<div style="flex:1;min-width:0"><div class="t">הוסף תמונת פרופיל</div><div class="small muted">ככה החברים יזהו אותך, והמסגרות שתרוויח יופיעו עליה.</div></div></div><label for="avatarIn" class="btn ghost block" style="cursor:pointer">📷 בחר תמונה</label><input type="file" id="avatarIn" accept="image/*" class="hidden"></section>`}
-  <section class="card"><div class="row between"><div class="eyebrow">CHECK-IN · <span class="num">${esc(S.checkin)}</span></div></div>
-   <div class="row">${[['low','אנרגיה נמוכה'],['mid','רגיל'],['high','מלא אנרגיה']].map(([k,l])=>`<button class="chip" data-act="energy" data-k="${k}" aria-pressed="${S.energy[today()]===k}">${l}</button>`).join('')}</div>
-   <div class="coachline">${energyLine()}</div></section>
-  ${inj.map(i=>`<section class="card"><div class="row between"><div class="eyebrow">פציעה במעקב</div><span class="tag">${esc(i.date)}</span></div>
-   <h3>${esc(REG[i.region].n)} ${esc(i.side)}: עדיין כואב?</h3>
-   ${i.result?.adjust?.length?`<div class="banner">התוכנית מותאמת: ${esc(i.result.adjust[0])}</div>`:''}
-   <div class="row"><button class="btn ghost" data-act="injagain" data-id="${i.id}">כן, לעדכן</button><button class="btn ghost" data-act="injbetter" data-id="${i.id}">השתפר, לסגור</button></div></section>`).join('')}
-  <section class="card"><div class="row between"><div class="eyebrow">התוכנית להיום</div><div class="row"><span class="num small muted">${nDone}/${items.length}</span>${AI&&!PLAN_BUSY?'<button class="chip small" data-act="replan">בנה מחדש</button>':''}</div></div>
-   ${PLAN_BUSY?'<div class="banner">המאמן בונה לך תוכנית לפי המטרות שלך…</div>':fromAI&&note?`<div class="coachline">${esc(note)}</div>`:fromReport?'<div class="banner">התוכנית נבנתה מחדש לפי דיווח הערב שלך</div>':''}
-   ${inj.length?`<div class="banner bad">שים לב: ${esc(REG[inj[0].region].n)} ${esc(inj[0].side)} בפציעה. דלג על כל תרגיל שמכאיב שם.</div>`:''}
-   <div>${items.map(([t,d],i)=>taskRow(t,d,i,done)).join('')}</div>
-   <input type="file" id="proofIn" accept="image/*,video/*" class="hidden"></section>
+  ${(()=>{const last=[...S.chat].reverse().find(m=>m.role==='assistant');const txt=last?last.content:`היי${S.name?' '+S.name:''}! אני המאמן האישי שלך. ספר לי איך היה היום, או שאל אותי כל דבר על אימון, תזונה או שינה.`;
+    return `<section class="card coachcard"><div class="row" style="gap:10px;flex-wrap:nowrap"><div class="coachav" aria-hidden="true">🧑‍🏫</div><div><div class="t">המאמן שלך</div><div class="small muted">${AI?'מחובר · עונה תוך שניות':'מצב הדגמה'}</div></div></div>
+     <div class="coachbubble">${fmt(txt)}</div>
+     <div class="row" style="gap:6px;flex-wrap:wrap">${['מה האימון היום?','איך היה לי היום?','אני עייף, לוותר היום?'].map(q=>`<button class="chip small" data-act="homesay">${q}</button>`).join('')}</div>
+     <div class="cform homeform"><input type="text" id="homeMsg" placeholder="כתוב למאמן…" enterkeyhint="send"><button class="btn" type="button" data-act="homesend">שלח</button></div>
+     ${S.chat.length>1?'<button class="btn ghost block small" data-act="openchat">לשיחה המלאה ←</button>':''}</section>`})()}
+  ${(()=>{const {items}=planItems();const done=S.done[today()]||{};const n=items.filter((_,i)=>done[i]).length;const open=reportOpen()&&!S.reports.some(r=>r.date===today());
+    return `<button class="card planlink" data-act="goplan"><div><div class="eyebrow">התוכנית להיום</div><div class="t">${n}/${items.length} משימות${open?' · דיווח הערב מחכה לך':''}</div></div><span class="disp" style="font-size:30px;color:var(--accent)">←</span></button>`})()}
   ${hasSport()?`<section class="card"><div class="eyebrow">בדיקה חיה 🦴</div><h3>הראה למאמן איך אתה מבצע</h3>${homeTotals()}<button class="btn block" data-act="live">פתח מצלמה עם שלד</button></section>`:''}
-  ${reportCard()}
   <section class="card"><div class="row between"><div class="eyebrow">צעדים היום</div><span class="small muted num">יעד ${S.stepGoal.toLocaleString('he-IL')}</span></div>
    ${(()=>{const st=S.steps[today()]||0,pc=Math.min(100,Math.round(st/S.stepGoal*100));return `<div class="row between" style="align-items:flex-end"><span class="disp" style="font-size:52px">${st.toLocaleString('he-IL')}</span><span class="small ${pc>=100?'':'muted'}" style="${pc>=100?'color:var(--good);font-weight:700':''}">${pc>=100?'עברת את היעד!':pc+'% מהיעד'}</span></div>
    <div class="bar"><i style="width:${pc}%"></i></div>`})()}
@@ -1082,6 +1079,25 @@ function homeView(){const h=new Date().getHours();const hi=h<12?'בוקר טוב
     <div class="bar"><i style="width:${pc}%"></i></div>
     ${M.map((m,i)=>`<div class="hist">${m.thumb?`<img src="${m.thumb}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:8px">`:''}<div style="flex:1;min-width:0"><div class="t">${esc(m.name)}</div><div class="small muted num">${esc(m.time)} · ${m.protein} גר׳ חלבון</div></div><span class="num">${m.kcal}</span><button class="x" data-act="delmeal" data-i="${i}" aria-label="מחק">×</button></div>`).join('')||'<p class="small muted">עוד לא סרקת ארוחות היום.</p>'}`})()}
    <button class="btn" data-act="food">סרוק ארוחה</button></section>
+  </div>`}
+
+function planView(){const {items,fromReport,fromAI,note}=planItems();const done=S.done[today()]||{};const inj=activeInj();
+  const nDone=items.filter((_,i)=>done[i]).length;
+  return `<div class="stack">
+  <div class="onbg"><div class="eyebrow">${new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'})}</div><h1 class="disp" style="font-size:48px">התוכנית להיום</h1></div>
+  <section class="card"><div class="row between"><div class="eyebrow">CHECK-IN · <span class="num">${esc(S.checkin)}</span></div></div>
+   <div class="row">${[['low','אנרגיה נמוכה'],['mid','רגיל'],['high','מלא אנרגיה']].map(([k,l])=>`<button class="chip" data-act="energy" data-k="${k}" aria-pressed="${S.energy[today()]===k}">${l}</button>`).join('')}</div>
+   <div class="coachline">${energyLine()}</div></section>
+  ${inj.map(i=>`<section class="card"><div class="row between"><div class="eyebrow">פציעה במעקב</div><span class="tag">${esc(i.date)}</span></div>
+   <h3>${esc(REG[i.region].n)} ${esc(i.side)}: עדיין כואב?</h3>
+   ${i.result?.adjust?.length?`<div class="banner">התוכנית מותאמת: ${esc(i.result.adjust[0])}</div>`:''}
+   <div class="row"><button class="btn ghost" data-act="injagain" data-id="${i.id}">כן, לעדכן</button><button class="btn ghost" data-act="injbetter" data-id="${i.id}">השתפר, לסגור</button></div></section>`).join('')}
+  <section class="card"><div class="row between"><div class="eyebrow">התוכנית להיום</div><div class="row"><span class="num small muted">${nDone}/${items.length}</span>${AI&&!PLAN_BUSY?'<button class="chip small" data-act="replan">בנה מחדש</button>':''}</div></div>
+   ${PLAN_BUSY?'<div class="banner">המאמן בונה לך תוכנית לפי המטרות שלך…</div>':fromAI&&note?`<div class="coachline">${esc(note)}</div>`:fromReport?'<div class="banner">התוכנית נבנתה מחדש לפי דיווח הערב שלך</div>':''}
+   ${inj.length?`<div class="banner bad">שים לב: ${esc(REG[inj[0].region].n)} ${esc(inj[0].side)} בפציעה. דלג על כל תרגיל שמכאיב שם.</div>`:''}
+   <div>${items.map(([t,d],i)=>taskRow(t,d,i,done)).join('')}</div>
+   <input type="file" id="proofIn" accept="image/*,video/*" class="hidden"></section>
+  ${reportCard()}
   </div>`}
 
 /* ---------- coach chat ---------- */
@@ -1433,6 +1449,10 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   case'delmeal':{const M=S.meals[today()]||[];M.splice(+t.dataset.i,1);save();render();break}
   case'close':case'closebg':{const r=WHAT_RES;WHAT_RES=null;closeSheet();r&&r(null);break}
   case'say':sendChat(t.textContent);break;
+    case'homesay':S.tab='coach';save();render();sendChat(t.textContent);break;
+    case'homesend':{const v=($('#homeMsg')?.value||'').trim();if(!v)break;S.tab='coach';save();render();sendChat(v)}break;
+    case'openchat':S.tab='coach';save();render();break;
+    case'goplan':S.tab='plan';save();render();scrollTo(0,0);break;
   case'pain':openInjury(t.dataset.r||null);break;
   case'psport':S.psport=t.dataset.k;S.ex=null;save();render();break;
   case'ex':S.ex=t.dataset.x;save();render();break;
@@ -1466,6 +1486,7 @@ async function readSteps(f){if(!(AI&&IMG)){toast('קריאת צילום מסך �
   catch(e){toast(aiFail(e))}}
 document.addEventListener('input',e=>{if(e.target.id==='painR'){IJ.pain=+e.target.value;$('#painV').textContent=IJ.pain}if(e.target.id==='injOther'&&IJ)IJ.other=e.target.value});
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList?.contains('spot')){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}))}});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target?.id==='homeMsg'){e.preventDefault();$('[data-act=homesend]')?.click()}});
 document.querySelectorAll('.nav [data-tab]').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;save();render();scrollTo(0,0)});
 $('#painBtn').onclick=()=>openInjury(null);
 function submitChat(){const i=$('#chatIn');const v=i.value;if(!v.trim())return;i.value='';sendChat(v)}
@@ -1477,7 +1498,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='emai
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='customIn'||e.target.id==='areaIn')){e.preventDefault();const id=e.target.id;(id==='areaIn'?addArea:addCustom)(e.target.value);save();render();setTimeout(()=>$('#'+id)?.focus(),0)}});
 render();
 /* ---------- updates: when a new version is published, show it and load it ---------- */
-const APP_VER='20261103173423';
+const APP_VER='20261103174527';
 function updScreen(html){let d=$('#upd');if(!d){d=document.createElement('div');d.id='upd';d.className='upd';document.body.append(d)}d.innerHTML=`<div class="upd-box" dir="rtl" lang="he">${html}</div>`}
 async function checkUpdate(){if(location.protocol!=='https:'||LIVE)return;let j;try{j=await (await fetch('version.json?t='+Date.now(),{cache:'no-store'})).json()}catch(e){return}
   if(!j?.ver||j.ver===APP_VER)return;const key='upd-'+j.ver;let n=0;try{n=+sessionStorage.getItem(key)||0;sessionStorage.setItem(key,n+1)}catch(e){n=9}
