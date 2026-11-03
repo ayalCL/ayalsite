@@ -759,7 +759,8 @@ function liveMeasure(id,lm,ar,L){const E=LIVE_EX[id]||{kind:'general'};const sd=
   const visible=need.every(q=>q.v>T);
   // facing the camera? shoulders look wide compared to the torso
   const sw=Math.hypot((lm[11].x-lm[12].x)*ar,lm[11].y-lm[12].y),tl=Math.hypot(S_.x-H.x,S_.y-H.y);const front=lm[11].visibility>T&&lm[12].visibility>T&&(H.v<=T||sw>0.8*tl);
-  const syAvg=(lm[11].y+lm[12].y)/2;const elb=[[11,13,15],[12,14,16]].filter(q=>q.every(i=>(lm[i].visibility??1)>T)).map(q=>ang(g(q[0]),g(q[1]),g(q[2])));const elbowAvg=elb.length?elb.reduce((x,y)=>x+y,0)/elb.length:null;
+  const shv=[lm[11],lm[12]].filter(q=>(q.visibility??1)>T);const syAvg=shv.length?shv.reduce((a,q)=>a+q.y,0)/shv.length:S_.y;const tlv=H.v>T?tl:null;
+  const armBelow=[13,14,15,16].some(i=>(lm[i].visibility??1)>T&&lm[i].y>syAvg+0.02);const elb=[[11,13,15],[12,14,16]].filter(q=>q.every(i=>(lm[i].visibility??1)>T)).map(q=>ang(g(q[0]),g(q[1]),g(q[2])));const elbowAvg=elb.length?elb.reduce((x,y)=>x+y,0)/elb.length:null;
   // average both sides when both are seen
   const both=(f)=>{const vals=[SIDE_L,SIDE_R].map(sd2=>f(g(sd2.s),g(sd2.e),g(sd2.w),g(sd2.h),g(sd2.k),g(sd2.a))).filter(x=>x!=null);return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null};
   let sig=null;
@@ -775,7 +776,7 @@ function liveMeasure(id,lm,ar,L){const E=LIVE_EX[id]||{kind:'general'};const sd=
   const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);const armLen=dist(S_,El)+dist(El,W);
   const pos={ey:El.v>T?El.y:null,sy:S_.y,wy:W.v>T?W.y:(L?.wyLast??null),hy:H.v>T?H.y:null,ky:K.v>T?K.y:null,ay:A0.v>T?A0.y:null,armLen,torsoTilt:H.v>T?tilt(S_,H):null};
   const chin=ys.wr!=null?lm[0].y<ys.wr+0.01:(L?.wyLast!=null?lm[0].y<L.wyLast+0.01:false);
-  return{visible,front,sw,syAvg,elbowAvg,sig,ys,chin,pos,elbow,knee,hip,line,bodyTilt,noseAboveWrist:N.y<W.y,wristAboveShoulder:W.y<S_.y,inverted:A.y<H.y&&H.y<S_.y,hipBelowKnee:H.y>=K.y-0.02,feetUp:A.y<W.y-0.02}}
+  return{visible,front,sw,tl:tlv,syAvg,armBelow,elbowAvg,sig,ys,chin,pos,elbow,knee,hip,line,bodyTilt,noseAboveWrist:N.y<W.y,wristAboveShoulder:W.y<S_.y,inverted:A.y<H.y&&H.y<S_.y,hipBelowKnee:H.y>=K.y-0.02,feetUp:A.y<W.y-0.02}}
 // stop = the position is lost (clock stops). tip = still counts, but here is what to improve.
 function holdPose(kind,m){const P=m.pos||{};if(P.wy==null)return null;const arm=P.armLen||0.2;
   const below=P.wy>P.sy+0.4*arm, above=P.wy<P.sy-0.4*arm, feetUp=P.ay!=null&&P.ay<P.wy-0.02;
@@ -805,12 +806,11 @@ function liveNew(id,name){return{id,name,what:LIVE_WHAT,facing:'user',running:fa
 function realRep(E,rng,m){const d=k=>rng[k]?rng[k][1]-rng[k][0]:null;const sh=d('sh'),wr=d('wr'),hp=d('hp'),an=d('an');const P=m.pos||{};
   const flat=P.torsoTilt!=null&&P.torsoTilt<40, upright=P.torsoTilt!=null&&P.torsoTilt>50&&P.hy!=null&&P.sy<P.hy;
   const handsBelow=m.ys?.wr!=null&&m.ys?.sh!=null?m.ys.wr>m.ys.sh:true, handsAbove=m.ys?.wr!=null&&m.ys?.sh!=null?m.ys.wr<m.ys.sh:false;
-  if(E===LIVE_EX.pushup){if(sh==null||sh<0.03||(wr!=null&&wr>0.6*sh)||!handsBelow)return false;
-    if(m.front&&m.sw&&sh<0.25*m.sw)return false;                             // from the front: a real drop of the shoulders
-    if(m.front&&(m.wyLast==null||m.wyLast<m.syAvg+0.3*m.sw))return false;       // from the front: hands seen on the floor, below the shoulders
-    if(!m.front&&P.wy!=null&&P.armLen&&P.wy<P.sy+0.4*P.armLen)return false;  // from the side: arms under the body at the top
-    if(!m.front&&P.torsoTilt!=null&&!flat)return false;                    // from the side the body must be horizontal
-    if(!m.front&&m.ys?.an!=null&&m.bodyTilt>45)return false;return true}
+  if(E===LIVE_EX.pushup){const side=!m.front&&m.tl!=null&&(m.sw||0)<0.5*m.tl;if(sh==null||sh<0.02||(wr!=null&&wr>0.6*sh)||!handsBelow)return false;
+    if(!m.armSeen)return false;                                               // arms seen reaching down to the floor
+    if(side&&P.wy!=null&&P.armLen&&P.wy<P.sy+0.3*P.armLen)return false;      // from the side: arms under the body at the top
+    if(side&&P.torsoTilt!=null&&!flat)return false;                          // from the side the body must be horizontal
+    if(side&&m.ys?.an!=null&&m.bodyTilt>45)return false;return true}
   if(E===LIVE_EX.dips){if(sh==null||sh<0.03||(wr!=null&&wr>0.6*sh)||!handsBelow)return false;
     if(P.torsoTilt!=null&&P.torsoTilt<35)return false;                       // upright-ish body, not lying
     if(m.ys?.an!=null&&an!=null&&an<0.5*sh)return false;return true}         // the whole body moves with the shoulders (feet off the floor)
@@ -829,28 +829,29 @@ function liveStep(L,m,t){const E=LIVE_EX[L.id]||{kind:'general'};L.frames++;if(!
   const note=x=>{L.issues[x]=(L.issues[x]||0)+1};
   if(E.kind==='reps'){
     // push-ups: decide once whether we film from the front or the side, switch only if it stays different
-    let useFront=false;if(E===LIVE_EX.pushup){const want=m.front?'front':'side';
-      if(!L.mode){L.mode=want;L.modeN=0}else if(want!==L.mode){if(++L.modeN>45){L.mode=want;L.modeN=0;L.ph=null;L.smooth=null;L.rep=null;L.sMax=null}}else L.modeN=0;
-      useFront=L.mode==='front'&&m.sw>0.02;
-      if(useFront){L.swRef=L.swRef==null?m.sw:(m.sw>L.swRef?L.swRef*0.9+m.sw*0.1:L.swRef*0.995+m.sw*0.005)}}
+    // push-ups: how high the shoulders are, measured in body size (shoulder width from the front, torso from the side).
+    // Works from any angle, wide or narrow hands, hands seen or not.
+    let useFront=false;if(E===LIVE_EX.pushup){const sc=Math.max(m.sw||0,0.8*(m.tl||0));
+      if(sc>0.02){useFront=true;L.swRef=L.swRef==null?sc:L.swRef*0.97+sc*0.03}else if(L.swRef)useFront=true;
+      if(m.armBelow)L.armSeen=true}
     let raw=useFront?-m.syAvg/L.swRef:m.sig;if(raw==null){L.msg='צריך לראות את '+(E.sig==='leg'?'המותניים, הברכיים והרגליים':'הכתפיים והידיים');L.cls='bad';return}
     if(!useFront&&(E.sig==='arm'||E.sig==='pull')){L.sMax=Math.max((L.sMax||raw)*0.9985,raw);raw=raw/L.sMax}  // 1 = arms straight, as you stand right now
-    L.smooth=L.smooth==null?raw:L.smooth*0.6+raw*0.4;const a=L.smooth,R=0.2;L.dbg=`${useFront||m.front?'מלפנים':'מהצד'} · עומק ${Math.max(0,Math.min(100,Math.round(useFront?(L.hiV!=null?(L.hiV-a)/0.4*100:0):(1-a)*100)))}%`;const ang_=useFront?(m.elbowAvg??999):(E.joint==='elbow'&&m.elbowAvg!=null&&m.front?m.elbowAvg:m[E.joint]);
+    L.smooth=L.smooth==null?raw:L.smooth*0.6+raw*0.4;const a=L.smooth,R=0.2;L.dbg=`${m.front?'מלפנים':'מהצד'} · עומק ${Math.max(0,Math.min(100,Math.round(useFront?(L.hiV!=null?(L.hiV-a)/0.45*100:0):(1-a)*100)))}%`;const ang_=E===LIVE_EX.pushup?(m.front?(m.elbowAvg??999):(m.elbow??999)):(E.joint==='elbow'&&m.elbowAvg!=null&&m.front?m.elbowAvg:m[E.joint]);
     if(!L.ph){L.ph='top';L.hiV=a;L.loV=a}
     if(!L.rep)L.rep={t0:t,min:999,lineMin:999};
     if(m.ys){const R_=L.rep.rng||(L.rep.rng={});for(const k in m.ys){const y=m.ys[k];if(y==null)continue;const r=R_[k]||(R_[k]=[y,y]);if(y<r[0])r[0]=y;if(y>r[1])r[1]=y}}
     if(L.ph==='top'){if(a>=L.hiV){L.hiV=a;L.rep={t0:t,min:999,lineMin:999}}
       if(a<L.hiV-R){L.ph='bottom';L.loV=a;L.downT=t;L.formBad=false;L.formTip=false}}
     else{if(a<L.loV){L.loV=a;if(t-L.snapT>150){L.snapReq='rep';L.snapT=t}}
-      L.rep.min=Math.min(L.rep.min,ang_);if(m.chin)L.rep.chin=true;if(!m.front&&!useFront)L.rep.lineMin=Math.min(L.rep.lineMin,m.line);
-      if(E.line&&!m.front&&!useFront){if(m.line<140)L.formBad=true;else if(m.line<158)L.formTip=true}
-      if(a>=L.loV+Math.max(R,0.7*(L.hiV-L.loV))&&t-L.downT>300){const drop=L.hiV-L.loV;L.ph='top';L.hiV=a;const full=E.sig==='pull'?(L.rep.chin||L.loV<=0.2):useFront?(drop>=0.4||L.rep.min<=100):(L.loV<=E.full||(E.joint==='elbow'&&L.rep.min<=100));const real=realRep(E,L.rep.rng||{},{...m,front:useFront||m.front,wyLast:L.wyLast});
-        if(!real){L.rep=null;L.msg=useFront&&L.wyLast==null?'לא רואה את הידיים. הרחק את הטלפון קצת, שהידיים על הרצפה ייכנסו לתמונה':`זה לא נראה כמו ${E.name}. ${E.tip}`;L.cls='bad'}
+      L.rep.min=Math.min(L.rep.min,ang_);if(m.chin)L.rep.chin=true;if(!m.front)L.rep.lineMin=Math.min(L.rep.lineMin,m.line);
+      if(E.line&&!m.front){if(m.line<140)L.formBad=true;else if(m.line<158)L.formTip=true}
+      if(a>=L.loV+Math.max(R,0.7*(L.hiV-L.loV))&&t-L.downT>300){const drop=L.hiV-L.loV;L.ph='top';L.hiV=a;const full=E.sig==='pull'?(L.rep.chin||L.loV<=0.2):useFront?(drop>=0.45||L.rep.min<=100):(L.loV<=E.full||(E.joint==='elbow'&&L.rep.min<=100));const real=realRep(E,L.rep.rng||{},{...m,armSeen:L.armSeen,wyLast:L.wyLast});
+        if(!real){L.rep=null;L.msg=useFront&&!L.armSeen?'לא רואה את הידיים. הרחק את הטלפון קצת, שהידיים על הרצפה ייכנסו לתמונה':`זה לא נראה כמו ${E.name}. ${E.tip}`;L.cls='bad'}
         else if(!full){L.bad++;repEnd(L,t,false,E.sig==='pull'?'הסנטר לא עבר את המוט':'חצי חזרה');note(E.sig==='pull'?'סנטר מעל המוט בכל חזרה':E.sig==='leg'?'רד עמוק יותר':'רד עמוק יותר, טווח מלא');L.msg=E.sig==='pull'?'עוד קצת! סנטר מעל המוט':'חצי חזרה: רד עמוק יותר';L.cls='bad'}
         else if(L.formBad){L.bad++;repEnd(L,t,false,'גוף לא ישר');note('גוף ישר לאורך כל החזרה');L.msg='✗ הגוף לא היה ישר';L.cls='bad'}
         else if(L.formTip){L.reps++;repEnd(L,t,true,'נספרה, הגוף לא לגמרי ישר');L.tips['שמור על גוף ישר יותר']=(L.tips['שמור על גוף ישר יותר']||0)+1;L.msg='✓ נספרה · נסה גוף ישר יותר';L.cls='warn'}
         else{L.reps++;repEnd(L,t,true);L.msg='✓ חזרה טובה';L.cls='good'}}}
-    if(L.ph==='bottom'&&E.line&&!m.front&&!useFront&&m.line<140){L.msg='יישר את הגוף!';L.cls='bad'}
+    if(L.ph==='bottom'&&E.line&&!m.front&&m.line<140){L.msg='יישר את הגוף!';L.cls='bad'}
     return}
   if(E.kind==='pull'){const a=m.elbow;L.smooth=L.smooth==null?a:L.smooth*0.6+a*0.4;
     if(!L.rep)L.rep={t0:t,min:999,lineMin:999};if(L.smooth<L.rep.min-2){L.rep.min=L.smooth;if(t-L.snapT>150){L.snapReq='rep';L.snapT=t}}L.rep.lineMin=Math.min(L.rep.lineMin,m.line??180);
@@ -941,7 +942,7 @@ async function startLive(id,name){closeSheet();LIVE=liveNew(id,name||LIVE_EX[id]
   const loop=()=>{if(!LIVE||!LIVE.running)return;const t=performance.now();
     if(v.videoWidth&&t-lastBg>250){lastBg=t;const w=64,h=Math.round(64*v.videoHeight/v.videoWidth);if(bg.width!==w||bg.height!==h){bg.width=w;bg.height=h}bgx.drawImage(v,0,0,w,h)}
     if(v.readyState>=2&&v.videoWidth){try{const r=pose.detectForVideo(v,t);const lm=r?.landmarks?.[0];drawSkel(cv,lm,v.videoWidth,v.videoHeight,frameView(LIVE,lm,v));
-      if(lm){LIVE.miss=0;liveStep(LIVE,liveMeasure(LIVE.id,lm,v.videoWidth/v.videoHeight,LIVE),t);if(LIVE.snapReq)takeSnap(LIVE,v)}else{LIVE.miss=(LIVE.miss||0)+1;if(LIVE.miss>20){LIVE.msg='לא רואה אותך. התרחק קצת מהמצלמה';LIVE.cls='bad'}}}catch(e){console.warn(e)}}
+      if(lm){LIVE.miss=0;recFrame(LIVE,lm,t,v);liveStep(LIVE,liveMeasure(LIVE.id,lm,v.videoWidth/v.videoHeight,LIVE),t);if(LIVE.snapReq)takeSnap(LIVE,v)}else{LIVE.miss=(LIVE.miss||0)+1;if(LIVE.miss>20){LIVE.msg='לא רואה אותך. התרחק קצת מהמצלמה';LIVE.cls='bad'}}}catch(e){console.warn(e)}}
     if(t-lastHud>120){liveHud();lastHud=t}LIVE.raf=requestAnimationFrame(loop)};loop()}
 function stopLive(){if(!LIVE)return;LIVE.running=false;cancelAnimationFrame(LIVE.raf);const v=$('#liveVid');if(v.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null}$('#live').classList.add('hidden')}
 function liveResult(L){const E=LIVE_EX[L.id]||{kind:'general'};const top=Object.entries(L.issues).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
@@ -952,6 +953,14 @@ function liveResult(L){const E=LIVE_EX[L.id]||{kind:'general'};const top=Object.
   const tipList=Object.entries(L.tips).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).filter(x=>!top.includes(x));
   return{score,headline,fix:[...top,...tipList].slice(0,3),good:E.kind==='hold'?(L.bestHold>=1000?[`החזקת ${(L.bestHold/1000).toFixed(1)} שנ׳`]:[]):(L.reps?[`${L.reps} חזרות בטווח מלא`]:[])}}
 let LAST_LIVE=null,LIVE_WHAT='';
+const REC_IDX=[0,11,12,13,14,15,16,23,24,25,26,27,28];
+function recFrame(L,lm,t,v){const R=L.rec||(L.rec={t0:t,w:v.videoWidth,h:v.videoHeight,f:[]});if(R.f.length>=2400||t-(R.last||0)<60)return;R.last=t;
+  R.f.push([Math.round(t-R.t0),...REC_IDX.flatMap(i=>[Math.round(lm[i].x*1000),Math.round(lm[i].y*1000),Math.round((lm[i].visibility??1)*100)])])}
+async function shareRec(){const L=LAST_LIVE?.L;if(!L?.rec)return toast('אין נתונים לשליחה');
+  const data=JSON.stringify({app:APP_VER,ex:L.id,name:L.name,what:L.what||'',w:L.rec.w,h:L.rec.h,idx:REC_IDX,frames:L.rec.f,result:{reps:L.reps,bad:L.bad,log:L.log.map(r=>({ok:r.ok,why:r.why,min:r.min,dur:r.dur}))}});
+  const name=`skeleton-${L.id}-${today()}.json`;const file=new File([data],name,{type:'application/json'});
+  try{if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:'נתוני מדידה'});return}}catch(e){if(e?.name==='AbortError')return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}
 // how much of each exercise was done in the app, counted only from good reps / good hold time
 function addTotals(L){const E=LIVE_EX[L.id];if(!E||E.kind==='general')return;const T=S.totals||(S.totals={});const x=T[L.id]||(T[L.id]={reps:0,sec:0,sessions:0,best:0,today:{}});
   const d=today();if(E.kind==='hold'){const sec=Math.round(L.holdMs/100)/10;if(sec<0.5)return;x.sec=Math.round((x.sec+sec)*10)/10;x.best=Math.max(x.best,Math.round(L.bestHold/100)/10);x.today={[d]:Math.round(((x.today?.[d]||0)+sec)*10)/10}}
@@ -985,7 +994,8 @@ function finishLive(){const L=LIVE;if(!L)return;stopLive();const R=liveResult(L)
    <div id="liveDeep"></div>
    ${L.what?`<div class="small muted"><b>מה ניסית:</b> ${esc(L.what)}</div>`:''}
    ${L.seen>5?`<button class="btn block" id="liveDeepBtn" data-act="livedeep">ניתוח מעמיק מהמאמן 🔍</button><p class="small muted" id="liveDeepNote" style="margin:0">המאמן יקבל את המדידות ו-${pickSnaps(L).length||'כמה'} תמונות מרגעי המפתח.</p>`:''}
-   <button class="btn block ghost" data-act="liveagain" data-id="${esc(L.id)}" data-name="${esc(L.name)}">נסה שוב</button>`)}
+   <button class="btn block ghost" data-act="liveagain" data-id="${esc(L.id)}" data-name="${esc(L.name)}">נסה שוב</button>
+   ${L.rec?.f?.length?`<button class="btn block ghost small" data-act="sharerec" style="opacity:.75">📤 הספירה לא הייתה נכונה? שלח את נתוני השלד</button><p class="small muted" style="margin:0">רק נקודות השלד (מספרים), בלי תמונה ובלי סרטון.</p>`:''}`)}
 function openLivePicker(){sheet(`${head('הראה למאמן','מה אתה מבצע?')}
    <div class="addrow"><input type="text" id="liveQ" placeholder="חפש תרגיל, למשל: פרונט לבר"><button class="btn" type="button" data-act="livefind">חפש</button></div>
    <div id="liveFindOut"></div>
@@ -1382,6 +1392,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   case'liveagain':startLive(t.dataset.id,t.dataset.name);break;
   case'liveflip':if(LIVE){LIVE.facing=LIVE.facing==='user'?'environment':'user';startCamera().catch(()=>toast('לא הצלחתי להחליף מצלמה'))}break;
   case'livefit':if(LIVE){LIVE.fullFrame=!LIVE.fullFrame;$('#liveFitBtn').textContent=LIVE.fullFrame?'⛶ מסך מלא':'⤢ כל הפריים'}break;
+    case'sharerec':shareRec();break;
     case'livedeep':liveDeep();break;
     case'liveask':{closeSheet();S.tab='coach';save();render();sendChat(`עשיתי בדיקה חיה עם השלד: ${t.dataset.name}. התוצאה: ${t.dataset.sum}. תסביר לי לעומק איך לתקן ואיך להתקדם.`)}break;
   case'look':{const ty=t.dataset.type,id=t.dataset.id;S.look=S.look||{};S.look[ty]=id;save();applyLook();render();openProfile();break}
@@ -1445,7 +1456,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='emai
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='customIn'||e.target.id==='areaIn')){e.preventDefault();const id=e.target.id;(id==='areaIn'?addArea:addCustom)(e.target.value);save();render();setTimeout(()=>$('#'+id)?.focus(),0)}});
 render();
 /* ---------- updates: when a new version is published, show it and load it ---------- */
-const APP_VER='20261102221658';
+const APP_VER='20261103072621';
 function updScreen(html){let d=$('#upd');if(!d){d=document.createElement('div');d.id='upd';d.className='upd';document.body.append(d)}d.innerHTML=`<div class="upd-box" dir="rtl" lang="he">${html}</div>`}
 async function checkUpdate(){if(location.protocol!=='https:'||LIVE)return;let j;try{j=await (await fetch('version.json?t='+Date.now(),{cache:'no-store'})).json()}catch(e){return}
   if(!j?.ver||j.ver===APP_VER)return;const key='upd-'+j.ver;let n=0;try{n=+sessionStorage.getItem(key)||0;sessionStorage.setItem(key,n+1)}catch(e){n=9}
