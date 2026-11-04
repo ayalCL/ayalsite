@@ -749,13 +749,13 @@ const LIVE_EX={
  situp:{name:'כפיפות בטן',kind:'reps',sig:'hip',full:0.5,joint:'hip',down:80,up:120,inverse:true,tip:'צלם מהצד, בגובה הרצפה',al:['כפיפות בטן','בטן','sit up','situp','crunch']},
  plank:{name:'פלאנק',kind:'hold',hold:'plank',tip:'צלם מהצד, בגובה הרצפה',al:['פלאנק','plank']},
  frontlever:{name:'פרונט לבר',kind:'hold',hold:'frontlever',tip:'צלם מהצד, מהמוט ועד הרגליים',al:['פרונט לבר','פרונט','front lever','frontlever','לבר']},
- tuckfl:{name:'טאק פרונט לבר',kind:'hold',hold:'tuckfl',tip:'צלם מהצד, מהמוט ועד הרגליים',al:['טאק פרונט','tuck front','טאק לבר']},
- advtuckfl:{name:'אדבנס טאק פרונט לבר',kind:'hold',hold:'advtuckfl',tip:'צלם מהצד, מהמוט ועד הרגליים. גב ישר, ברכיים כפופות',al:['אדבנס טאק פרונט','אדבנס פרונט','advanced tuck front','adv tuck front','טאק מתקדם פרונט','אדבנס טאק פרונט לבר']},
+ tuckfl:{name:'טאק פרונט לבר',kind:'hold',hold:'tuckfl',tip:'צלם מהצד, מהמוט ועד הרגליים. ברכיים צמודות לחזה',al:['טאק פרונט','tuck front','טאק לבר']},
+ advtuckfl:{name:'אדבנס טאק פרונט לבר',kind:'hold',hold:'advtuckfl',tip:'צלם מהצד, מהמוט ועד הרגליים. הירכיים ב-90° מהחזה, ברכיים כפופות',al:['אדבנס טאק פרונט','אדבנס פרונט','advanced tuck front','adv tuck front','טאק מתקדם פרונט','אדבנס טאק פרונט לבר']},
  onelegfl:{name:'פרונט לבר רגל אחת',kind:'hold',hold:'onelegfl',tip:'צלם מהצד: רגל אחת ישרה, השנייה בטאק',al:['פרונט לבר רגל אחת','רגל אחת פרונט','one leg front','single leg front','פרונט רגל אחת']},
  straddlefl:{name:'סטראדל פרונט לבר',kind:'hold',hold:'straddlefl',tip:'צלם מהצד או מלפנים, רגליים ישרות ופתוחות',al:['סטראדל פרונט','straddle front','סטרדל פרונט','פרונט סטראדל','סטראדל פרונט לבר']},
  planche:{name:'פלאנש',kind:'hold',hold:'planche',tip:'צלם מהצד, בגובה הרצפה',al:['פלאנש','planche','פלאנץ','פלאנץ׳']},
- tuckplanche:{name:'טאק פלאנש',kind:'hold',hold:'tuckplanche',tip:'צלם מהצד, בגובה הרצפה',al:['טאק פלאנש','טאק פלאנץ','tuck planche','טאק']},
- advtuckpl:{name:'אדבנס טאק פלאנש',kind:'hold',hold:'advtuckpl',tip:'צלם מהצד, בגובה הרצפה. גב ישר, ברכיים כפופות',al:['אדבנס טאק פלאנש','אדבנס פלאנש','אדבנס טאק פלאנץ','advanced tuck planche','adv tuck planche','טאק מתקדם פלאנש']},
+ tuckplanche:{name:'טאק פלאנש',kind:'hold',hold:'tuckplanche',tip:'צלם מהצד, בגובה הרצפה. ברכיים צמודות לחזה',al:['טאק פלאנש','טאק פלאנץ','tuck planche','טאק']},
+ advtuckpl:{name:'אדבנס טאק פלאנש',kind:'hold',hold:'advtuckpl',tip:'צלם מהצד, בגובה הרצפה. הירכיים ב-90° מהחזה, ברכיים כפופות',al:['אדבנס טאק פלאנש','אדבנס פלאנש','אדבנס טאק פלאנץ','advanced tuck planche','adv tuck planche','טאק מתקדם פלאנש']},
  onelegpl:{name:'פלאנש רגל אחת',kind:'hold',hold:'onelegpl',tip:'צלם מהצד: רגל אחת ישרה, השנייה בטאק',al:['פלאנש רגל אחת','פלאנץ רגל אחת','רגל אחת פלאנש','one leg planche','single leg planche']},
  straddlepl:{name:'סטראדל פלאנש',kind:'hold',hold:'straddlepl',tip:'צלם מהצד או מלפנים, רגליים ישרות ופתוחות',al:['סטראדל פלאנש','סטראדל פלאנץ','straddle planche','סטרדל פלאנש','פלאנש סטראדל']},
  lsit:{name:'L-sit',kind:'hold',hold:'lsit',tip:'צלם מהצד, בגובה הרצפה',al:['l sit','l-sit','lsit','אל סיט','ישיבת L']},
@@ -846,15 +846,15 @@ function holdPose(kind,m){const P=m.pos||{};if(P.wy==null)return null;const arm=
   if(kind==='lsit')return !below?'ידיים ישרות על הרצפה או הפרלטים, מתחת לכתפיים':(P.ay!=null&&P.ay>P.wy+0.03?'הרגליים צריכות להיות באוויר':null);
   if(kind==='handstand')return P.wy<P.sy+0.4*arm||(P.torsoTilt!=null&&P.torsoTilt<60)?'ידיים על הרצפה, הגוף הפוך מעליהן':null;
   return null}
-// leg shape per stage (side view): tuck = knees to chest; advanced tuck = back flat, thighs about square to the body;
+// leg shape per stage (side view): tuck = knees against the chest (hip angle under ~70); advanced tuck = thighs at 90 degrees from the chest;
 // one leg = one leg straight in line, the other tucked; straddle = both legs straight (legs apart are seen from the front)
 function legShape(stage,m,stop,tip){const L=m.legs||[];if(!L.length)return;const st=L.filter(l=>l.knee>150),bent=L.filter(l=>l.knee<130);
   const hipMax=Math.max(...L.map(l=>l.hip)),lineMax=Math.max(...L.map(l=>l.line));
-  if(stage==='tuck'){if(bent.length<L.length)tip.push('כופף את הברכיים לחזה');else if(hipMax>110)tip.push('נראה שאתה כבר באדבנס טאק 💪')}
-  if(stage==='advtuck'){if(hipMax<75)stop.push('יישר את הגב: הרחק קצת את הברכיים מהחזה');if(st.length===L.length&&L.length)tip.push('הרגליים ישרות: זה כבר שלב מתקדם יותר')}
+  if(stage==='tuck'){if(bent.length<L.length)tip.push('כופף את הברכיים');else if(hipMax>80)tip.push('הירכיים ב-90° מהחזה: זה כבר אדבנס טאק 💪');else if(hipMax>65)tip.push('הצמד את הברכיים לחזה')}
+  if(stage==='advtuck'){if(hipMax<70)stop.push('הברכיים צמודות לחזה (זה טאק): פתח את הירכיים ל-90° מהחזה');else if(hipMax<80)tip.push('פתח עוד קצת את הירכיים, עד 90° מהחזה');if(st.length===L.length&&L.length)tip.push('הרגליים ישרות: זה כבר שלב מתקדם יותר')}
   if(stage==='oneleg'){const s=L.find(l=>l.knee>150&&l.line>140);if(!s)stop.push('יישר רגל אחת עד הסוף, בקו עם הגוף');else if(s.line<160)tip.push('הרגל הישרה בקו אחד עם הגוף')}
   if(stage==='straddle'){if(st.length<L.length)stop.push('יישר את שתי הרגליים');else if(lineMax<145)stop.push('הרם את האגן: גוף ישר מהכתפיים');else if(lineMax<160)tip.push('עוד קצת ישר, אגן בקו')}}
-function holdCheck(kind,m){const stop=[],tip=[];const bad=holdPose(kind,m);if(bad){stop.push(bad);return{stop,tip}}
+function holdCheck(kind,m){const stop=[],tip=[];if((FL_FAM.includes(kind)||PL_FAM.includes(kind))&&!['frontlever','planche','straddlefl','straddlepl'].includes(kind)&&m.pos?.torsoTilt!=null)m={...m,bodyTilt:m.pos.torsoTilt};const bad=holdPose(kind,m);if(bad){stop.push(bad);return{stop,tip}}
   if(kind==='plank'){if(m.line<140)stop.push('האגן ירד מדי, יישר את הגוף');else if(m.line<162)tip.push('יישר עוד קצת את הגוף')}
   if(FL_FAM.includes(kind)){if(!m.wristAboveShoulder)stop.push('תלה על המוט, ידיים מעל הכתפיים');if(m.bodyTilt>40)stop.push('הגוף ירד, הרם אותו למקביל לרצפה');else if(m.bodyTilt>20)tip.push('עוד קצת למעלה, מקביל לרצפה');
     if(m.elbow<130)stop.push('ידיים ישרות');else if(m.elbow<155)tip.push('נסה לנעול את המרפקים');
@@ -1645,7 +1645,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='emai
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='customIn'||e.target.id==='areaIn')){e.preventDefault();const id=e.target.id;(id==='areaIn'?addArea:addCustom)(e.target.value);save();render();setTimeout(()=>$('#'+id)?.focus(),0)}});
 render();
 /* ---------- updates: when a new version is published, show it and load it ---------- */
-const APP_VER='20261104210252';
+const APP_VER='20261104211010';
 function updScreen(html){let d=$('#upd');if(!d){d=document.createElement('div');d.id='upd';d.className='upd';document.body.append(d)}d.innerHTML=`<div class="upd-box" dir="rtl" lang="he">${html}</div>`}
 async function checkUpdate(){if(location.protocol!=='https:'||LIVE)return;let j;try{j=await (await fetch('version.json?t='+Date.now(),{cache:'no-store'})).json()}catch(e){return}
   if(!j?.ver||j.ver===APP_VER)return;const key='upd-'+j.ver;let n=0;try{n=+sessionStorage.getItem(key)||0;sessionStorage.setItem(key,n+1)}catch(e){n=9}
