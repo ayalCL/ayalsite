@@ -98,6 +98,7 @@ body.has-bg .onbg,body.has-bg .onbg .muted,body.has-bg .onbg .eyebrow,body.has-b
 .coachbubble{background:var(--surface-2);border-radius:16px 16px 16px 4px;padding:12px 14px;max-height:9.5em;overflow:hidden;position:relative;line-height:1.5}
 .homeform{display:flex;gap:8px}.homeform input{flex:1}
 .planlink{display:flex;justify-content:space-between;align-items:center;text-align:start;width:100%;cursor:pointer;font:inherit;color:inherit}
+.exgrid .sport .disp{font-family:inherit!important;font-size:15px!important;font-weight:700;line-height:1.2;letter-spacing:0}
 .fixc{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface)}.fixc summary{cursor:pointer;list-style-position:inside}.fixc[open] summary{margin-bottom:6px}.fixc .small{margin-top:4px}
 .drillc{background:var(--accent-soft)}.exgrid .disp{font-size:17px;line-height:1.2}
 .exgrid .sport{min-height:0;padding:12px 8px;text-align:center;align-items:center}
@@ -749,12 +750,20 @@ const LIVE_EX={
  plank:{name:'פלאנק',kind:'hold',hold:'plank',tip:'צלם מהצד, בגובה הרצפה',al:['פלאנק','plank']},
  frontlever:{name:'פרונט לבר',kind:'hold',hold:'frontlever',tip:'צלם מהצד, מהמוט ועד הרגליים',al:['פרונט לבר','פרונט','front lever','frontlever','לבר']},
  tuckfl:{name:'טאק פרונט לבר',kind:'hold',hold:'tuckfl',tip:'צלם מהצד, מהמוט ועד הרגליים',al:['טאק פרונט','tuck front','טאק לבר']},
+ advtuckfl:{name:'אדבנס טאק פרונט לבר',kind:'hold',hold:'advtuckfl',tip:'צלם מהצד, מהמוט ועד הרגליים. גב ישר, ברכיים כפופות',al:['אדבנס טאק פרונט','אדבנס פרונט','advanced tuck front','adv tuck front','טאק מתקדם פרונט','אדבנס טאק פרונט לבר']},
+ onelegfl:{name:'פרונט לבר רגל אחת',kind:'hold',hold:'onelegfl',tip:'צלם מהצד: רגל אחת ישרה, השנייה בטאק',al:['פרונט לבר רגל אחת','רגל אחת פרונט','one leg front','single leg front','פרונט רגל אחת']},
+ straddlefl:{name:'סטראדל פרונט לבר',kind:'hold',hold:'straddlefl',tip:'צלם מהצד או מלפנים, רגליים ישרות ופתוחות',al:['סטראדל פרונט','straddle front','סטרדל פרונט','פרונט סטראדל','סטראדל פרונט לבר']},
  planche:{name:'פלאנש',kind:'hold',hold:'planche',tip:'צלם מהצד, בגובה הרצפה',al:['פלאנש','planche','פלאנץ','פלאנץ׳']},
  tuckplanche:{name:'טאק פלאנש',kind:'hold',hold:'tuckplanche',tip:'צלם מהצד, בגובה הרצפה',al:['טאק פלאנש','טאק פלאנץ','tuck planche','טאק']},
+ advtuckpl:{name:'אדבנס טאק פלאנש',kind:'hold',hold:'advtuckpl',tip:'צלם מהצד, בגובה הרצפה. גב ישר, ברכיים כפופות',al:['אדבנס טאק פלאנש','אדבנס פלאנש','אדבנס טאק פלאנץ','advanced tuck planche','adv tuck planche','טאק מתקדם פלאנש']},
+ onelegpl:{name:'פלאנש רגל אחת',kind:'hold',hold:'onelegpl',tip:'צלם מהצד: רגל אחת ישרה, השנייה בטאק',al:['פלאנש רגל אחת','פלאנץ רגל אחת','רגל אחת פלאנש','one leg planche','single leg planche']},
+ straddlepl:{name:'סטראדל פלאנש',kind:'hold',hold:'straddlepl',tip:'צלם מהצד או מלפנים, רגליים ישרות ופתוחות',al:['סטראדל פלאנש','סטראדל פלאנץ','straddle planche','סטרדל פלאנש','פלאנש סטראדל']},
  lsit:{name:'L-sit',kind:'hold',hold:'lsit',tip:'צלם מהצד, בגובה הרצפה',al:['l sit','l-sit','lsit','אל סיט','ישיבת L']},
  handstand:{name:'עמידת ידיים',kind:'hold',hold:'handstand',tip:'צלם מהצד, כל הגוף בפריים',al:['עמידת ידיים','הנדסטנד','handstand']}};
 const LIVE_BASE=['pullup','squat','bench','dips','pushup','situp'];
-const LIVE_MORE=['frontlever','tuckfl','planche','tuckplanche','lsit','handstand','plank'];
+const LIVE_MORE=['lsit','handstand','plank'];
+const LADDERS=[['סולם פרונט לבר',['tuckfl','advtuckfl','onelegfl','straddlefl','frontlever']],['סולם פלאנש',['tuckplanche','advtuckpl','onelegpl','straddlepl','planche']]];
+const FL_FAM=LADDERS[0][1],PL_FAM=LADDERS[1][1];
 const PUSH_AL=['שכיבות סמיכה','שכיבת סמיכה','שכיבות','push up','pushup','push-up','פוש אפ'];
 const PUSH_VAR={
   pushup_diamond:['שכיבות סמיכה יהלום',['יהלום','diamond','צרות','close grip','משולש']],
@@ -825,23 +834,34 @@ function liveMeasure(id,lm,ar,L){const E=LIVE_EX[id]||{kind:'general'};const sd=
   const side=!front&&tlv!=null&&sw<0.5*tlv&&sw<0.1&&H.v>0.6;
   const lineK=K.v>T&&H.v>T?ang(S_,H,K):null;const kneeTilt=K.v>T?tilt(S_,K):null;
   const onKnees=K.v>T&&W.v>T&&A0.v>T&&Math.abs(K.y-W.y)<0.06&&A0.y<K.y-0.03; // knees on the floor (level with the hands), feet up
-  return{visible,front,side,lineK,kneeTilt,onKnees,sw,tl:tlv,syAvg,noseY,armBelow,elbowAvg,sig,ys,chin,pos,elbow,knee,hip,line,bodyTilt,noseAboveWrist:N.y<W.y,wristAboveShoulder:W.y<S_.y,inverted:A.y<H.y&&H.y<S_.y,hipBelowKnee:H.y>=K.y-0.02,feetUp:A.y<W.y-0.02}}
+  const legA=(h,k,a)=>[h,k,a].every(i=>(lm[i].visibility??1)>T)?{knee:ang(g(h),g(k),g(a)),hip:ang(S_,g(h),g(k)),line:ang(S_,g(h),g(a))}:null;
+  const legs=[legA(23,25,27),legA(24,26,28)].filter(Boolean);
+  return{visible,front,side,lineK,legs,kneeTilt,onKnees,sw,tl:tlv,syAvg,noseY,armBelow,elbowAvg,sig,ys,chin,pos,elbow,knee,hip,line,bodyTilt,noseAboveWrist:N.y<W.y,wristAboveShoulder:W.y<S_.y,inverted:A.y<H.y&&H.y<S_.y,hipBelowKnee:H.y>=K.y-0.02,feetUp:A.y<W.y-0.02}}
 // stop = the position is lost (clock stops). tip = still counts, but here is what to improve.
 function holdPose(kind,m){const P=m.pos||{};if(P.wy==null)return null;const arm=P.armLen||0.2;
   const below=P.wy>P.sy+0.4*arm, above=P.wy<P.sy-0.4*arm, feetUp=P.ay!=null&&P.ay<P.wy-0.02;
   if(kind==='plank'){if(P.torsoTilt!=null&&P.torsoTilt>35)return 'צריך להיות בשכיבה, גוף מקביל לרצפה';const floor=Math.max(P.wy,P.ey??P.wy);return P.sy>floor-0.25*arm?'הרם את הגוף מהרצפה, על הידיים או האמות':null}
-  if(kind==='frontlever'||kind==='tuckfl')return above?(P.hy!=null&&P.hy<P.sy-0.6*arm?'זה נראה כמו עמידת ידיים, לא פרונט לבר':null):'צריך לתלות על המוט, ידיים מעל הכתפיים';
-  if(kind==='planche'||kind==='tuckplanche')return !below?'ידיים על הרצפה מתחת לכתפיים':(P.ay!=null&&P.ay>P.wy-0.5*arm?'הרגליים צריכות להיות באוויר':null);
+  if(FL_FAM.includes(kind))return above?(P.hy!=null&&P.hy<P.sy-0.6*arm?'זה נראה כמו עמידת ידיים, לא פרונט לבר':null):'צריך לתלות על המוט, ידיים מעל הכתפיים';
+  if(PL_FAM.includes(kind))return !below?'ידיים על הרצפה מתחת לכתפיים':(P.ay!=null&&P.ay>P.wy-0.5*arm?'הרגליים צריכות להיות באוויר':null);
   if(kind==='lsit')return !below?'ידיים ישרות על הרצפה או הפרלטים, מתחת לכתפיים':(P.ay!=null&&P.ay>P.wy+0.03?'הרגליים צריכות להיות באוויר':null);
   if(kind==='handstand')return P.wy<P.sy+0.4*arm||(P.torsoTilt!=null&&P.torsoTilt<60)?'ידיים על הרצפה, הגוף הפוך מעליהן':null;
   return null}
+// leg shape per stage (side view): tuck = knees to chest; advanced tuck = back flat, thighs about square to the body;
+// one leg = one leg straight in line, the other tucked; straddle = both legs straight (legs apart are seen from the front)
+function legShape(stage,m,stop,tip){const L=m.legs||[];if(!L.length)return;const st=L.filter(l=>l.knee>150),bent=L.filter(l=>l.knee<130);
+  const hipMax=Math.max(...L.map(l=>l.hip)),lineMax=Math.max(...L.map(l=>l.line));
+  if(stage==='tuck'){if(bent.length<L.length)tip.push('כופף את הברכיים לחזה');else if(hipMax>110)tip.push('נראה שאתה כבר באדבנס טאק 💪')}
+  if(stage==='advtuck'){if(hipMax<75)stop.push('יישר את הגב: הרחק קצת את הברכיים מהחזה');if(st.length===L.length&&L.length)tip.push('הרגליים ישרות: זה כבר שלב מתקדם יותר')}
+  if(stage==='oneleg'){const s=L.find(l=>l.knee>150&&l.line>140);if(!s)stop.push('יישר רגל אחת עד הסוף, בקו עם הגוף');else if(s.line<160)tip.push('הרגל הישרה בקו אחד עם הגוף')}
+  if(stage==='straddle'){if(st.length<L.length)stop.push('יישר את שתי הרגליים');else if(lineMax<145)stop.push('הרם את האגן: גוף ישר מהכתפיים');else if(lineMax<160)tip.push('עוד קצת ישר, אגן בקו')}}
 function holdCheck(kind,m){const stop=[],tip=[];const bad=holdPose(kind,m);if(bad){stop.push(bad);return{stop,tip}}
   if(kind==='plank'){if(m.line<140)stop.push('האגן ירד מדי, יישר את הגוף');else if(m.line<162)tip.push('יישר עוד קצת את הגוף')}
-  if(kind==='frontlever'||kind==='tuckfl'){if(!m.wristAboveShoulder)stop.push('תלה על המוט, ידיים מעל הכתפיים');if(m.bodyTilt>40)stop.push('הגוף ירד, הרם אותו למקביל לרצפה');else if(m.bodyTilt>20)tip.push('עוד קצת למעלה, מקביל לרצפה');
+  if(FL_FAM.includes(kind)){if(!m.wristAboveShoulder)stop.push('תלה על המוט, ידיים מעל הכתפיים');if(m.bodyTilt>40)stop.push('הגוף ירד, הרם אותו למקביל לרצפה');else if(m.bodyTilt>20)tip.push('עוד קצת למעלה, מקביל לרצפה');
     if(m.elbow<130)stop.push('ידיים ישרות');else if(m.elbow<155)tip.push('נסה לנעול את המרפקים');
     if(kind==='frontlever'){if(m.line<140)stop.push('האגן נפל, גוף בקו אחד');else if(m.line<160)tip.push('הרם קצת את האגן לקו אחד')}}
-  if(kind==='planche'||kind==='tuckplanche'){if(m.elbow<130)stop.push('ידיים נעולות וישרות');else if(m.elbow<155)tip.push('נסה לנעול את המרפקים');if(m.bodyTilt>40)stop.push('הישען קדימה, הגוף מקביל לרצפה');else if(m.bodyTilt>25)tip.push('עוד קצת קדימה');
+  if(PL_FAM.includes(kind)){if(m.elbow<130)stop.push('ידיים נעולות וישרות');else if(m.elbow<155)tip.push('נסה לנעול את המרפקים');if(m.bodyTilt>40)stop.push('הישען קדימה, הגוף מקביל לרצפה');else if(m.bodyTilt>25)tip.push('עוד קצת קדימה');
     if(kind==='planche'){if(m.line<140)stop.push('גוף ישר מהכתפיים עד הרגליים');else if(m.line<160)tip.push('יישר קצת את הגוף')}}
+  if(FL_FAM.includes(kind)||PL_FAM.includes(kind))legShape(kind.replace(/fl$|pl$|planche$|tuckplanche$/,'').replace(/^frontlever$/,'full')||'full',m,stop,tip);
   if(kind==='lsit'){if(m.elbow<130)stop.push('ידיים ישרות');else if(m.elbow<150)tip.push('נסה לנעול את המרפקים');if(m.hip>140)stop.push('הרגליים ירדו, הרם אותן');else if(m.hip>110)tip.push('נסה להרים את הרגליים גבוה יותר');
     if(m.knee<110)stop.push('יישר את הרגליים');else if(m.knee<160)tip.push('נסה ליישר את הברכיים')}
   if(kind==='handstand'){if(!m.inverted)stop.push('עלה לעמידת ידיים');else{if(m.elbow<135)stop.push('ידיים נעולות');else if(m.elbow<155)tip.push('נסה לנעול את המרפקים');if(m.line<140)stop.push('הגוף נשבר, יישר אותו');else if(m.line<160)tip.push('פחות קשת בגב')}}
@@ -1142,6 +1162,7 @@ function openLivePicker(){sheet(`${head('הראה למאמן','מה אתה מב�
    <div id="liveFindOut"></div>
    <div class="eyebrow">בסיס</div><div class="exgrid">${LIVE_BASE.map(id=>`<button class="sport" type="button" data-act="livego" data-id="${id}"><span class="disp">${esc(LIVE_EX[id].name)}</span>${S.totals?.[id]?`<span class="small muted">${S.totals[id].reps} סה״כ</span>`:''}</button>`).join('')}</div>
    <div class="eyebrow">וריאציות של שכיבות סמיכה</div><div class="exgrid">${LIVE_PUSH.map(id=>`<button class="sport" type="button" data-act="livego" data-id="${id}"><span class="disp">${esc(LIVE_EX[id].name)}</span>${S.totals?.[id]?`<span class="small muted">${S.totals[id].reps} סה״כ</span>`:''}</button>`).join('')}</div>
+   ${LADDERS.map(([t,ids])=>`<div class="eyebrow">${t} · מהקל לקשה</div><div class="exgrid">${ids.map((id,i)=>`<button class="sport" type="button" data-act="livego" data-id="${id}"><span class="small muted">שלב ${i+1}</span><span class="disp">${esc(LIVE_EX[id].name)}</span>${S.totals?.[id]?`<span class="small muted">שיא ${S.totals[id].best} שנ׳</span>`:''}</button>`).join('')}</div>`).join('')}
    <div class="eyebrow">החזקות וסקילים</div><div class="exgrid">${LIVE_MORE.map(id=>`<button class="sport" type="button" data-act="livego" data-id="${id}"><span class="disp">${esc(LIVE_EX[id].name)}</span>${S.totals?.[id]?`<span class="small muted">${fmtSec(S.totals[id].sec)} סה״כ</span>`:''}</button>`).join('')}</div>
    <p class="small muted">המצלמה נפתחת והשלד מתיישב על הגוף. השלד רץ בטלפון והסרטון לא נשמר. תמונות מרגעי המפתח נשלחות למאמן רק אם תבקש ניתוח מעמיק.</p>`)}
 async function liveDeep(){const X=LAST_LIVE;if(!X)return;const {L,R}=X;const box=$('#liveDeep');const btn=$('#liveDeepBtn');
@@ -1624,7 +1645,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='emai
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='customIn'||e.target.id==='areaIn')){e.preventDefault();const id=e.target.id;(id==='areaIn'?addArea:addCustom)(e.target.value);save();render();setTimeout(()=>$('#'+id)?.focus(),0)}});
 render();
 /* ---------- updates: when a new version is published, show it and load it ---------- */
-const APP_VER='20261104205604';
+const APP_VER='20261104210252';
 function updScreen(html){let d=$('#upd');if(!d){d=document.createElement('div');d.id='upd';d.className='upd';document.body.append(d)}d.innerHTML=`<div class="upd-box" dir="rtl" lang="he">${html}</div>`}
 async function checkUpdate(){if(location.protocol!=='https:'||LIVE)return;let j;try{j=await (await fetch('version.json?t='+Date.now(),{cache:'no-store'})).json()}catch(e){return}
   if(!j?.ver||j.ver===APP_VER)return;const key='upd-'+j.ver;let n=0;try{n=+sessionStorage.getItem(key)||0;sessionStorage.setItem(key,n+1)}catch(e){n=9}
