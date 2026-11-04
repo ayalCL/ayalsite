@@ -82,6 +82,18 @@ body.has-bg .onbg,body.has-bg .onbg .muted,body.has-bg .onbg .eyebrow,body.has-b
 .exgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .exgrid .sport{min-height:0;padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:2px}
 .totals{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.tot{background:var(--surface-2);border-radius:14px;padding:10px 12px}.tot .disp{font-size:40px;line-height:1}
+.game{position:fixed;inset:0;z-index:72;background:#14161A;color:#fff;display:flex;flex-direction:column;touch-action:none;user-select:none;-webkit-user-select:none}
+.game-top{position:relative;z-index:3;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 6px}
+.game-top .x{background:rgba(255,255,255,.15);color:#fff}.game-name{font-weight:800;font-size:18px}
+.game-time{font-family:var(--display);font-size:26px;font-weight:700;color:#FFB089;min-width:70px;text-align:left}.game-time.low{color:#FF5A5A}
+.game-hud{display:flex;justify-content:space-between;align-items:baseline;padding:0 16px 6px;font-family:var(--display);font-size:34px;font-weight:700}
+.game-hud .small{font-family:inherit;font-size:14px;opacity:.7}
+#gameCan{flex:1;width:100%;display:block}
+.game-over{position:absolute;inset:0;background:rgba(10,12,15,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center}
+.game-over .t{font-size:24px}.game-over .btn{min-width:220px}
+.gamegrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.gamecard{border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--surface);display:flex;flex-direction:column;gap:4px;align-items:flex-start;text-align:start;font:inherit;color:inherit;cursor:pointer}
+.gamecard .ico{font-size:34px}.gamecard[disabled]{opacity:.5}
 .coachcard{gap:12px}.coachav{width:46px;height:46px;border-radius:50%;background:var(--accent-soft);display:grid;place-items:center;font-size:24px;flex:none}
 .coachbubble{background:var(--surface-2);border-radius:16px 16px 16px 4px;padding:12px 14px;max-height:9.5em;overflow:hidden;position:relative;line-height:1.5}
 .homeform{display:flex;gap:8px}.homeform input{flex:1}
@@ -240,6 +252,12 @@ ul.clean{margin:0;padding:0 18px 0 0;display:flex;flex-direction:column;gap:4px}
   <div class="cform"><label class="attach" for="chatFile" title="שלח סרטון או תמונה" aria-label="שלח סרטון או תמונה"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg></label><input type="file" id="chatFile" accept="video/*,image/*" class="hidden"><input type="text" id="chatIn" placeholder="כתוב למאמן…" autocomplete="off" enterkeyhint="send"><button class="btn" type="button" id="chatSend">שלח</button></div>
 </div></div>
 <div id="sheetRoot"></div>
+<div id="game" class="game hidden" dir="rtl" lang="he">
+  <div class="game-top"><button class="x" data-act="gameclose" aria-label="סגור">×</button><div class="game-name" id="gameName"></div><div class="game-time" id="gameTime"></div></div>
+  <div class="game-hud"><span id="gameScore">0</span><span class="small" id="gameBest"></span></div>
+  <canvas id="gameCan"></canvas>
+  <div class="game-over hidden" id="gameOver"></div>
+</div>
 <div id="live" class="live hidden" dir="rtl" lang="he">
   <canvas id="liveBg"></canvas><video id="liveVid" playsinline muted autoplay></video><canvas id="liveCan"></canvas>
   <div class="live-top"><button class="x" data-act="livestop" aria-label="סגור">×</button><div><div class="live-name" id="liveName"></div><div id="liveRes" style="font-size:11px;opacity:.6;text-align:center"></div></div><div class="row" style="gap:6px"><button class="chip small" data-act="livefit" id="liveFitBtn">⤢ כל הפריים</button><button class="chip small" data-act="liveflip">🔄 מצלמה</button></div></div>
@@ -975,6 +993,83 @@ function liveResult(L){const E=LIVE_EX[L.id]||{kind:'general'};const top=Object.
   else{const tot=L.reps+L.bad;const tipN=L.log.filter(r=>r.ok&&r.why).length;score=tot?Math.max(1,Math.round(10*(L.reps-tipN*0.3)/tot)):0;headline=`${L.reps} חזרות נספרו${L.bad?`, ${L.bad} לא נספרו`:''}`}
   const tipList=Object.entries(L.tips).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).filter(x=>!top.includes(x));
   return{score,headline,fix:[...top,...tipList].slice(0,3),good:E.kind==='hold'?(L.bestHold>=1000?[`החזקת ${(L.bestHold/1000).toFixed(1)} שנ׳`]:[]):(L.reps?[`${L.reps} חזרות בטווח מלא`]:[])}}
+/* ---------- games: played with minutes earned by exercise ---------- */
+function fmtGame(sec){sec=Math.max(0,Math.floor(sec||0));const m=Math.floor(sec/60),r=sec%60;return m>=60?`${Math.floor(m/60)}:${String(m%60).padStart(2,'0')} שע׳`:`${m}:${String(r).padStart(2,'0')} דק׳`}
+const GAMES={snake:{name:'נחש',ico:'🐍',how:'החלק כדי לפנות. אכול ואל תתנגש.'},
+  jump:{name:'קפיצות',ico:'🐤',how:'הקש כדי לקפוץ בין העמודים.'},
+  g2048:{name:'2048',ico:'🔢',how:'החלק כדי לחבר מספרים זהים.'},
+  catch:{name:'תפוס',ico:'🍎',how:'גרור את הסל ותפוס פירות. לא פצצות!'}};
+function openGames(){closeSheet();const has=(S.gameSec||0)>0;
+  sheet(`${head('משחקים','שחק בזמן שהרווחת')}
+   <div class="banner" style="background:var(--accent-soft)">יש לך <b>${fmtGame(S.gameSec)}</b> משחק${S.gameEarned?` · הרווחת עד היום ${S.gameEarned} דק׳`:''}</div>
+   <div class="gamegrid">${Object.entries(GAMES).map(([k,g])=>`<button class="gamecard" data-act="gameplay" data-k="${k}" ${has?'':'disabled'}><span class="ico">${g.ico}</span><b>${g.name}</b><span class="small muted">${g.how}</span>${S.gameBest?.[k]?`<span class="small">שיא: ${S.gameBest[k]}</span>`:''}</button>`).join('')}</div>
+   ${has?'':'<p class="small">אין לך דקות משחק עדיין. כל שכיבת סמיכה, מתח, סקוואט או שנייה בפלאנק מול המצלמה = דקה.</p>'}
+   <button class="btn block ${has?'ghost':''}" data-act="live">💪 להרוויח עוד דקות</button>`)}
+let GAME=null;
+function gameTick(){if(!GAME||GAME.paused||GAME.over||document.hidden)return;S.gameSec=Math.max(0,(S.gameSec||0)-1);GAME.spent=(GAME.spent||0)+1;
+  if(GAME.spent%10===0)save();gameHud();if(S.gameSec<=0)gameOut()}
+function gameHud(){if(!GAME)return;const t=$('#gameTime');t.textContent=fmtGame(S.gameSec);t.classList.toggle('low',(S.gameSec||0)<60);
+  $('#gameScore').textContent=GAME.score;$('#gameBest').textContent=S.gameBest?.[GAME.k]?`שיא ${S.gameBest[GAME.k]}`:''}
+function gameOverlay(html){const o=$('#gameOver');o.innerHTML=html;o.classList.remove('hidden')}
+function gameOut(){if(!GAME)return;GAME.paused=true;save();
+  gameOverlay(`<div class="t">⏰ נגמרו דקות המשחק</div><p>כל חזרה או שנייה בהחזקה = עוד דקה.<br>5 שכיבות סמיכה = 5 דקות משחק.</p><button class="btn" data-act="gameearn">💪 להרוויח עוד דקות</button><button class="btn ghost" data-act="gameclose" style="color:#fff">יציאה</button>`)}
+function gameEnd(){if(!GAME||GAME.over)return;GAME.over=true;const b=S.gameBest||(S.gameBest={});const rec=GAME.score>(b[GAME.k]||0);if(rec)b[GAME.k]=GAME.score;save();gameHud();
+  gameOverlay(`<div class="t">${rec&&GAME.score?'🏆 שיא חדש!':'המשחק נגמר'}</div><div class="disp" style="font-size:56px">${GAME.score}</div><p class="small" style="opacity:.8">נשאר לך ${fmtGame(S.gameSec)}</p>
+   ${(S.gameSec||0)>0?`<button class="btn" data-act="gameplay" data-k="${GAME.k}">שחק שוב</button>`:`<button class="btn" data-act="gameearn">💪 להרוויח עוד דקות</button>`}<button class="btn ghost" data-act="gameclose" style="color:#fff">יציאה</button>`)}
+function closeGame(){if(!GAME)return;cancelAnimationFrame(GAME.raf);clearInterval(GAME.timer);GAME=null;$('#game').classList.add('hidden');save();render()}
+function startGame(k){if((S.gameSec||0)<=0){openGames();return}closeSheet();if(GAME){cancelAnimationFrame(GAME.raf);clearInterval(GAME.timer)}
+  const box=$('#game');box.classList.remove('hidden');$('#gameOver').classList.add('hidden');$('#gameName').textContent=GAMES[k].ico+' '+GAMES[k].name;
+  const cv=$('#gameCan');const dpr=devicePixelRatio||1;const W=cv.clientWidth,H=cv.clientHeight;cv.width=W*dpr;cv.height=H*dpr;const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);
+  GAME={k,score:0,W,H,c,over:false,paused:false,spent:0,input:null};GAME.timer=setInterval(gameTick,1000);
+  ({snake:gSnake,jump:gJump,g2048:g2048,catch:gCatch})[k](GAME);gameHud();
+  const step=()=>{if(!GAME)return;if(!GAME.paused&&!GAME.over)GAME.update?.(performance.now());GAME.draw?.();GAME.raf=requestAnimationFrame(step)};step()}
+// input: swipe / tap / drag, plus arrow keys
+(()=>{let sx=0,sy=0,st=0;const cv=()=>$('#gameCan');
+  document.addEventListener('pointerdown',e=>{if(!GAME||e.target!==cv())return;sx=e.clientX;sy=e.clientY;st=Date.now();GAME.onDown?.(e.clientX-cv().getBoundingClientRect().left,e.clientY-cv().getBoundingClientRect().top)});
+  document.addEventListener('pointermove',e=>{if(!GAME||e.target!==cv())return;GAME.onMove?.(e.clientX-cv().getBoundingClientRect().left)});
+  document.addEventListener('pointerup',e=>{if(!GAME||e.target!==cv())return;const dx=e.clientX-sx,dy=e.clientY-sy;if(Math.max(Math.abs(dx),Math.abs(dy))>24)GAME.onSwipe?.(Math.abs(dx)>Math.abs(dy)?(dx>0?'R':'L'):(dy>0?'D':'U'))});
+  document.addEventListener('keydown',e=>{if(!GAME)return;const m={ArrowUp:'U',ArrowDown:'D',ArrowLeft:'L',ArrowRight:'R'}[e.key];if(m){e.preventDefault();GAME.onSwipe?.(m)}if(e.key===' '){e.preventDefault();GAME.onDown?.(0,0)}})})();
+const GC={bg:'#14161A',grid:'#1E2228',acc:'#FF7A3D',good:'#4ADE80',ink:'#fff',dim:'#5B6470'};
+function gSnake(G){const N=18;const cell=Math.floor(Math.min(G.W,G.H-20)/N);const ox=(G.W-cell*N)/2,oy=(G.H-cell*N)/2;
+  let sn=[[9,9],[8,9],[7,9]],dir=[1,0],next=[1,0],food=null,last=0,speed=150;
+  const place=()=>{do{food=[Math.floor(Math.random()*N),Math.floor(Math.random()*N)]}while(sn.some(p=>p[0]===food[0]&&p[1]===food[1]))};place();
+  G.onSwipe=d=>{const v={U:[0,-1],D:[0,1],L:[-1,0],R:[1,0]}[d];if(v[0]!==-dir[0]||v[1]!==-dir[1])next=v};
+  G.update=t=>{if(t-last<speed)return;last=t;dir=next;const h=[sn[0][0]+dir[0],sn[0][1]+dir[1]];
+    if(h[0]<0||h[1]<0||h[0]>=N||h[1]>=N||sn.some(p=>p[0]===h[0]&&p[1]===h[1])){gameEnd();return}
+    sn.unshift(h);if(h[0]===food[0]&&h[1]===food[1]){G.score++;speed=Math.max(70,speed-4);place();gameHud()}else sn.pop()};
+  G.draw=()=>{const c=G.c;c.fillStyle=GC.bg;c.fillRect(0,0,G.W,G.H);c.fillStyle=GC.grid;c.fillRect(ox,oy,cell*N,cell*N);
+    c.fillStyle=GC.acc;c.beginPath();c.arc(ox+food[0]*cell+cell/2,oy+food[1]*cell+cell/2,cell*.4,0,7);c.fill();
+    sn.forEach((p,i)=>{c.fillStyle=i?GC.good:'#A7F3C0';c.fillRect(ox+p[0]*cell+1,oy+p[1]*cell+1,cell-2,cell-2)})}}
+function gJump(G){let y=G.H/2,vy=0,pipes=[],t0=null,lastP=0;const gap=Math.max(150,G.H*.26),r=14,x=G.W*.3;
+  G.onDown=()=>{vy=-7.2};
+  G.update=t=>{if(t0==null){t0=t;lastP=t}vy+=0.38;y+=vy;if(t-lastP>1500){lastP=t;const top=60+Math.random()*(G.H-gap-120);pipes.push({x:G.W,top,passed:false})}
+    for(const p of pipes){p.x-=2.6;if(!p.passed&&p.x+50<x){p.passed=true;G.score++;gameHud()}
+      if(x+r>p.x&&x-r<p.x+50&&(y-r<p.top||y+r>p.top+gap)){gameEnd();return}}
+    pipes=pipes.filter(p=>p.x>-60);if(y>G.H-r||y<r){gameEnd()}};
+  G.draw=()=>{const c=G.c;c.fillStyle=GC.bg;c.fillRect(0,0,G.W,G.H);c.fillStyle=GC.good;for(const p of pipes){c.fillRect(p.x,0,50,p.top);c.fillRect(p.x,p.top+gap,50,G.H)}
+    c.fillStyle=GC.acc;c.beginPath();c.arc(x,y,r,0,7);c.fill();c.fillStyle=GC.ink;c.beginPath();c.arc(x+5,y-4,3,0,7);c.fill();
+    if(t0==null){c.fillStyle=GC.ink;c.font='bold 20px sans-serif';c.textAlign='center';c.fillText('הקש כדי להתחיל',G.W/2,G.H*.75)}}
+  const u=G.update;G.update=t=>{if(t0==null&&vy===0)return;u(t)}}
+function g2048(G){const N=4;let b=Array.from({length:N},()=>Array(N).fill(0));
+  const add=()=>{const e=[];b.forEach((r,i)=>r.forEach((v,j)=>{if(!v)e.push([i,j])}));if(e.length){const [i,j]=e[Math.floor(Math.random()*e.length)];b[i][j]=Math.random()<.9?2:4}};add();add();
+  const slide=row=>{const a=row.filter(v=>v);for(let i=0;i<a.length-1;i++)if(a[i]===a[i+1]){a[i]*=2;G.score+=a[i];a.splice(i+1,1)}while(a.length<N)a.push(0);return a};
+  const canMove=()=>b.some((r,i)=>r.some((v,j)=>!v||(j<N-1&&v===r[j+1])||(i<N-1&&v===b[i+1][j])));
+  G.onSwipe=d=>{const before=JSON.stringify(b);const T=m=>m[0].map((_,j)=>m.map(r=>r[j]));
+    if(d==='L')b=b.map(slide);if(d==='R')b=b.map(r=>slide([...r].reverse()).reverse());if(d==='U')b=T(T(b).map(slide));if(d==='D')b=T(T(b).map(r=>slide([...r].reverse()).reverse()));
+    if(JSON.stringify(b)!==before){add();gameHud()}if(!canMove())gameEnd()};
+  const col={0:'#1E2228',2:'#3A3F47',4:'#4A4F57',8:'#B85A2A',16:'#D0612A',32:'#E2551B',64:'#FF7A3D',128:'#E9B949',256:'#EBC34F',512:'#F0CC58',1024:'#4ADE80',2048:'#22C55E'};
+  G.draw=()=>{const c=G.c;c.fillStyle=GC.bg;c.fillRect(0,0,G.W,G.H);const sz=Math.min(G.W-24,G.H-24),cs=sz/N,ox=(G.W-sz)/2,oy=(G.H-sz)/2;
+    b.forEach((r,i)=>r.forEach((v,j)=>{c.fillStyle=col[v]||'#16A34A';const x=ox+j*cs+4,y=oy+i*cs+4;c.beginPath();c.roundRect?c.roundRect(x,y,cs-8,cs-8,10):c.rect(x,y,cs-8,cs-8);c.fill();
+      if(v){c.fillStyle=GC.ink;c.font=`bold ${v>512?cs*.28:cs*.36}px sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(v,x+(cs-8)/2,y+(cs-8)/2)}}))}}
+function gCatch(G){let bx=G.W/2,items=[],last=0,speed=2.2,lives=3;const bw=80;
+  G.onMove=x=>{bx=Math.max(bw/2,Math.min(G.W-bw/2,x))};G.onDown=x=>{bx=Math.max(bw/2,Math.min(G.W-bw/2,x))};
+  G.update=t=>{if(t-last>750){last=t;items.push({x:20+Math.random()*(G.W-40),y:-20,bomb:Math.random()<.22})}
+    for(const it of items){it.y+=speed;if(it.y>G.H-50&&it.y<G.H-20&&Math.abs(it.x-bx)<bw/2+10&&!it.done){it.done=true;if(it.bomb){gameEnd();return}G.score++;speed=Math.min(6,speed+.06);gameHud()}
+      if(it.y>G.H&&!it.done&&!it.bomb){it.done=true;lives--;if(lives<=0){gameEnd();return}}}
+    items=items.filter(it=>!it.done&&it.y<G.H+30)};
+  G.draw=()=>{const c=G.c;c.fillStyle=GC.bg;c.fillRect(0,0,G.W,G.H);c.font='28px sans-serif';c.textAlign='center';c.textBaseline='middle';
+    for(const it of items)c.fillText(it.bomb?'💣':'🍎',it.x,it.y);c.fillStyle=GC.acc;c.fillRect(bx-bw/2,G.H-40,bw,14);
+    c.fillStyle=GC.ink;c.font='16px sans-serif';c.textAlign='left';c.fillText('❤'.repeat(lives),12,20)}}
 let LAST_LIVE=null,LIVE_WHAT='';
 const REC_IDX=[0,11,12,13,14,15,16,23,24,25,26,27,28];
 function recFrame(L,lm,t,v){const R=L.rec||(L.rec={t0:t,w:v.videoWidth,h:v.videoHeight,f:[]});if(R.f.length>=2400||t-(R.last||0)<60)return;R.last=t;
@@ -985,7 +1080,9 @@ async function shareRec(){const L=LAST_LIVE?.L;if(!L?.rec)return toast('אין �
   try{if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:'נתוני מדידה'});return}}catch(e){if(e?.name==='AbortError')return}
   const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}
 // how much of each exercise was done in the app, counted only from good reps / good hold time
-function addTotals(L){const E=LIVE_EX[L.id];if(!E||E.kind==='general')return;const T=S.totals||(S.totals={});const x=T[L.id]||(T[L.id]={reps:0,sec:0,sessions:0,best:0,today:{}});
+function earnedMin(L){const E=LIVE_EX[L.id];if(!E||E.kind==='general')return 0;return E.kind==='hold'?Math.floor((L.holdMs||0)/1000):(L.reps||0)}
+function addTotals(L){const E=LIVE_EX[L.id];if(!E||E.kind==='general')return;
+  const em=earnedMin(L);if(em>0){S.gameSec=(S.gameSec||0)+em*60;S.gameEarned=(S.gameEarned||0)+em;L.earned=em}const T=S.totals||(S.totals={});const x=T[L.id]||(T[L.id]={reps:0,sec:0,sessions:0,best:0,today:{}});
   const d=today();if(E.kind==='hold'){const sec=Math.round(L.holdMs/100)/10;if(sec<0.5)return;x.sec=Math.round((x.sec+sec)*10)/10;x.best=Math.max(x.best,Math.round(L.bestHold/100)/10);x.today={[d]:Math.round(((x.today?.[d]||0)+sec)*10)/10}}
   else{if(!L.reps)return;x.reps+=L.reps;x.best=Math.max(x.best,L.reps);x.today={[d]:(x.today?.[d]||0)+L.reps}}
   x.sessions++;x.last=d;save()}
@@ -1018,6 +1115,7 @@ function finishLive(){const L=LIVE;if(!L)return;stopLive();liveFlush(L);keepRec(
    ${(()=>{const x=S.totals?.[L.id];const E=LIVE_EX[L.id];if(!x||!E||E.kind==='general')return '';const h=E.kind==='hold';
      return `<div class="banner">📊 סה״כ ${esc(E.name)} באפליקציה: <b>${h?fmtSec(x.sec):x.reps+' חזרות'}</b>${(h?L.bestHold/1000>=x.best-0.05&&L.bestHold>=1000:L.reps>=x.best&&L.reps>0)&&x.sessions>1?' · 🏆 שיא חדש!':''}</div>`})()}
    ${L.diag||L.seen?`<p class="small muted" style="margin:0;font-size:11px">אבחון: ${L.diag?.downs||0} ירידות זוהו · ${L.reps} נספרו${L.diag?Object.entries(L.diag.why).map(([k,v])=>` · ${esc(k)}×${v}`).join(''):''} · ${L.seen}/${L.frames} פריימים · ${esc(L.res||'')}${L.swRef?' · קנה מידה '+L.swRef.toFixed(2):''}</p>`:''}
+   ${L.earned?`<div class="banner" style="background:var(--accent-soft)">🎮 הרווחת <b>${L.earned} דקות משחק</b>. יש לך עכשיו ${fmtGame(S.gameSec)}.<button class="btn block" data-act="games" style="margin-top:8px">למשחקים</button></div>`:''}
    <div id="liveDeep"></div>
    ${L.what?`<div class="small muted"><b>מה ניסית:</b> ${esc(L.what)}</div>`:''}
    ${L.seen>5?`<button class="btn block" id="liveDeepBtn" data-act="livedeep">ניתוח מעמיק מהמאמן 🔍</button><p class="small muted" id="liveDeepNote" style="margin:0">המאמן יקבל את המדידות ו-${pickSnaps(L).length||'כמה'} תמונות מרגעי המפתח.</p>`:''}
@@ -1069,6 +1167,9 @@ function homeView(){const h=new Date().getHours();const hi=h<12?'בוקר טוב
      ${S.chat.length>1?'<button class="btn ghost block small" data-act="openchat">לשיחה המלאה ←</button>':''}</section>`})()}
   ${(()=>{const {items}=planItems();const done=S.done[today()]||{};const n=items.filter((_,i)=>done[i]).length;const open=reportOpen()&&!S.reports.some(r=>r.date===today());
     return `<button class="card planlink" data-act="goplan"><div><div class="eyebrow">התוכנית להיום</div><div class="t">${n}/${items.length} משימות${open?' · דיווח הערב מחכה לך':''}</div></div><span class="disp" style="font-size:30px;color:var(--accent)">←</span></button>`})()}
+  <section class="card"><div class="row between"><div class="eyebrow">משחקים 🎮</div><span class="disp" style="font-size:30px;color:var(--accent)">${fmtGame(S.gameSec)}</span></div>
+   <p class="small muted" style="margin:0">כל חזרה או שנייה בהחזקה מול המצלמה = דקת משחק.</p>
+   <div class="row" style="gap:8px"><button class="btn" style="flex:1" data-act="games">שחק</button><button class="btn ghost" style="flex:1" data-act="live">להרוויח עוד</button></div></section>
   ${hasSport()?`<section class="card"><div class="eyebrow">בדיקה חיה 🦴</div><h3>הראה למאמן איך אתה מבצע</h3>${homeTotals()}<button class="btn block" data-act="live">פתח מצלמה עם שלד</button></section>`:''}
   <section class="card"><div class="row between"><div class="eyebrow">צעדים היום</div><span class="small muted num">יעד ${S.stepGoal.toLocaleString('he-IL')}</span></div>
    ${(()=>{const st=S.steps[today()]||0,pc=Math.min(100,Math.round(st/S.stepGoal*100));return `<div class="row between" style="align-items:flex-end"><span class="disp" style="font-size:52px">${st.toLocaleString('he-IL')}</span><span class="small ${pc>=100?'':'muted'}" style="${pc>=100?'color:var(--good);font-weight:700':''}">${pc>=100?'עברת את היעד!':pc+'% מהיעד'}</span></div>
@@ -1432,6 +1533,10 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   case'liveflip':if(LIVE){LIVE.facing=LIVE.facing==='user'?'environment':'user';startCamera().catch(()=>toast('לא הצלחתי להחליף מצלמה'))}break;
   case'livefit':if(LIVE){LIVE.fullFrame=!LIVE.fullFrame;$('#liveFitBtn').textContent=LIVE.fullFrame?'⛶ מסך מלא':'⤢ כל הפריים'}break;
     case'sharerec':shareRec();break;
+    case'games':openGames();break;
+    case'gameplay':startGame(t.dataset.k);break;
+    case'gameclose':closeGame();break;
+    case'gameearn':closeGame();openLivePicker();break;
     case'livedeep':liveDeep();break;
     case'liveask':{closeSheet();S.tab='coach';save();render();sendChat(`עשיתי בדיקה חיה עם השלד: ${t.dataset.name}. התוצאה: ${t.dataset.sum}. תסביר לי לעומק איך לתקן ואיך להתקדם.`)}break;
   case'look':{const ty=t.dataset.type,id=t.dataset.id;S.look=S.look||{};S.look[ty]=id;save();applyLook();render();openProfile();break}
@@ -1489,6 +1594,7 @@ async function readSteps(f){if(!(AI&&IMG)){toast('קריאת צילום מסך �
   catch(e){toast(aiFail(e))}}
 document.addEventListener('input',e=>{if(e.target.id==='painR'){IJ.pain=+e.target.value;$('#painV').textContent=IJ.pain}if(e.target.id==='injOther'&&IJ)IJ.other=e.target.value});
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList?.contains('spot')){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}))}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&GAME)save()});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target?.id==='homeMsg'){e.preventDefault();$('[data-act=homesend]')?.click()}});
 document.querySelectorAll('.nav [data-tab]').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;save();render();scrollTo(0,0)});
 $('#painBtn').onclick=()=>openInjury(null);
@@ -1501,7 +1607,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='emai
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='customIn'||e.target.id==='areaIn')){e.preventDefault();const id=e.target.id;(id==='areaIn'?addArea:addCustom)(e.target.value);save();render();setTimeout(()=>$('#'+id)?.focus(),0)}});
 render();
 /* ---------- updates: when a new version is published, show it and load it ---------- */
-const APP_VER='20261104203311';
+const APP_VER='20261104204157';
 function updScreen(html){let d=$('#upd');if(!d){d=document.createElement('div');d.id='upd';d.className='upd';document.body.append(d)}d.innerHTML=`<div class="upd-box" dir="rtl" lang="he">${html}</div>`}
 async function checkUpdate(){if(location.protocol!=='https:'||LIVE)return;let j;try{j=await (await fetch('version.json?t='+Date.now(),{cache:'no-store'})).json()}catch(e){return}
   if(!j?.ver||j.ver===APP_VER)return;const key='upd-'+j.ver;let n=0;try{n=+sessionStorage.getItem(key)||0;sessionStorage.setItem(key,n+1)}catch(e){n=9}
