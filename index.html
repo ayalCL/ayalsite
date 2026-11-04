@@ -840,7 +840,7 @@ function realRep(E,rng,m){const d=k=>rng[k]?rng[k][1]-rng[k][0]:null;const sh=d(
   const flat=P.torsoTilt!=null&&P.torsoTilt<40, upright=P.torsoTilt!=null&&P.torsoTilt>50&&P.hy!=null&&P.sy<P.hy;
   const handsBelow=m.ys?.wr!=null&&m.ys?.sh!=null?m.ys.wr>m.ys.sh:true, handsAbove=m.ys?.wr!=null&&m.ys?.sh!=null?m.ys.wr<m.ys.sh:false;
   if(E===LIVE_EX.pushup){const side=!!m.side;const no=w=>{m.why=w;return false};
-    if(sh==null||sh<0.03)return no('הכתפיים כמעט לא זזו');if(!side&&!handsBelow)return no('הידיים לא מתחת לכתפיים');
+    if(sh==null||sh<0.03)return no('הכתפיים כמעט לא זזו');if(wr==null)return no('לא ראיתי את הידיים');if(!side&&!handsBelow)return no('הידיים לא מתחת לכתפיים');
     if(side&&wr!=null&&wr>0.6*sh)return no('הידיים זזו');if(side&&!handsBelow)return no('הידיים לא מתחת לכתפיים');
     if(!side&&wr!=null&&wr>0.6*sh)return no('הידיים זזו יחד עם הגוף');   // from the front: hands travelling with the shoulders = standing up
     if(side&&P.wy!=null&&P.armLen&&P.wy<P.sy+0.3*P.armLen)return no('הידיים לא מתחת לגוף');
@@ -982,7 +982,7 @@ async function startLive(id,name){closeSheet();LIVE=liveNew(id,name||LIVE_EX[id]
     if(v.readyState>=2&&v.videoWidth){try{const r=pose.detectForVideo(v,t);const lm=r?.landmarks?.[0];drawSkel(cv,lm,v.videoWidth,v.videoHeight,frameView(LIVE,lm,v));
       if(lm){LIVE.miss=0;recFrame(LIVE,lm,t,v);const mm=liveMeasure(LIVE.id,lm,v.videoWidth/v.videoHeight,LIVE);
         // 3 seconds to get into position before anything is counted
-        if(!LIVE.goT){if(mm.visible){LIVE.vis0=LIVE.vis0||t;const left=3000-(t-LIVE.vis0);if(left<=0){LIVE.goT=t;LIVE.msg='יאללה! 💪';LIVE.cls='good'}else{LIVE.msg=`היכנס לתנוחה… מתחילים בעוד ${Math.ceil(left/1000)}`;LIVE.cls='warn'}}else{LIVE.vis0=0;LIVE.msg='צריך לראות אותך בפריים';LIVE.cls='bad'}}
+        if(!LIVE.goT){LIVE.vis0=LIVE.vis0||t;const left=3000-(t-LIVE.vis0);if(left<=0){LIVE.goT=t;LIVE.msg='יאללה! 💪';LIVE.cls='good'}else{LIVE.msg=`היכנס לתנוחה… מתחילים בעוד ${Math.ceil(left/1000)}`;LIVE.cls='warn'}}
         else liveStep(LIVE,mm,t);if(LIVE.snapReq)takeSnap(LIVE,v)}else{LIVE.miss=(LIVE.miss||0)+1;if(LIVE.miss>20){LIVE.msg='לא רואה אותך. התרחק קצת מהמצלמה';LIVE.cls='bad'}}}catch(e){console.warn(e)}}
     if(t-lastHud>120){liveHud();lastHud=t}LIVE.raf=requestAnimationFrame(loop)};loop()}
 function stopLive(){if(!LIVE)return;LIVE.running=false;cancelAnimationFrame(LIVE.raf);const v=$('#liveVid');if(v.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null}$('#live').classList.add('hidden')}
@@ -1607,7 +1607,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='emai
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='customIn'||e.target.id==='areaIn')){e.preventDefault();const id=e.target.id;(id==='areaIn'?addArea:addCustom)(e.target.value);save();render();setTimeout(()=>$('#'+id)?.focus(),0)}});
 render();
 /* ---------- updates: when a new version is published, show it and load it ---------- */
-const APP_VER='20261104204157';
+const APP_VER='20261104204831';
 function updScreen(html){let d=$('#upd');if(!d){d=document.createElement('div');d.id='upd';d.className='upd';document.body.append(d)}d.innerHTML=`<div class="upd-box" dir="rtl" lang="he">${html}</div>`}
 async function checkUpdate(){if(location.protocol!=='https:'||LIVE)return;let j;try{j=await (await fetch('version.json?t='+Date.now(),{cache:'no-store'})).json()}catch(e){return}
   if(!j?.ver||j.ver===APP_VER)return;const key='upd-'+j.ver;let n=0;try{n=+sessionStorage.getItem(key)||0;sessionStorage.setItem(key,n+1)}catch(e){n=9}
