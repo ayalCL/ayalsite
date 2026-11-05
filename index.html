@@ -99,6 +99,7 @@ body.has-bg .onbg,body.has-bg .onbg .muted,body.has-bg .onbg .eyebrow,body.has-b
 .homeform{display:flex;gap:8px}.homeform input{flex:1}
 .planlink{display:flex;justify-content:space-between;align-items:center;text-align:start;width:100%;cursor:pointer;font:inherit;color:inherit}
 .exgrid .sport .disp{font-family:inherit!important;font-size:15px!important;font-weight:700;line-height:1.2;letter-spacing:0}
+.linkbtn{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer}
 .fixc{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface)}.fixc summary{cursor:pointer;list-style-position:inside}.fixc[open] summary{margin-bottom:6px}.fixc .small{margin-top:4px}
 .drillc{background:var(--accent-soft)}.exgrid .disp{font-size:17px;line-height:1.2}
 .exgrid .sport{min-height:0;padding:12px 8px;text-align:center;align-items:center}
@@ -452,7 +453,8 @@ function makeAI(){
     if(msgs[0]?.role!=='user')msgs.unshift({role:'user',content:'שלום'});
     const images=opts.images?await Promise.all(Array.from(opts.images).slice(0,4).map(prepImage)):[];
     const {data,error}=await SB.functions.invoke('ask-coach',{body:{mode:'chat',messages:msgs,images,json:!!opts.json,max_tokens:opts.max||1200}});
-    if(error){const st=error.context?.status;throw{code:st===401?'not_granted':st===429?'rate_limited':'upstream_error',message:error.message}}
+    if(error){const st=error.context?.status;let info=null;try{info=await error.context.json()}catch(e){}
+      throw{code:st===401?'not_granted':st===429&&info?.error?.message==='daily_limit'?'daily_limit':st===429?'rate_limited':'upstream_error',kind:info?.error?.kind,limit:info?.error?.limit,message:error.message}}
     if(data?.error)throw{code:'upstream_error',message:data.error.message||String(data.error)};
     const text=(data?.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
     if(!text)throw{code:'empty_completion'};
@@ -462,6 +464,7 @@ function makeAI(){
   return call}
 function aiBadge(){document.querySelectorAll('.ai').forEach(el=>{el.classList.toggle('on',!!AI);el.lastChild.textContent=AI?'מאמן AI מחובר':'מצב הדגמה'})}
 function aiFail(e){if(e?.code==='not_granted')return 'צריך להתחבר מחדש כדי לדבר עם המאמן.';
+  if(e?.code==='daily_limit')return e.kind==='heavy'?`השתמשת היום בכל ${e.limit||5} הניתוחים של תמונות וסרטונים. מחר יש עוד! בינתיים אפשר לדבר עם המאמן או לעשות בדיקה חיה עם השלד.`:`הגעת למכסת המאמן להיום (${e.limit||30} הודעות). נמשיך מחר! 💪 הבדיקה החיה והמשחקים עובדים כרגיל.`;
   if(e?.code==='rate_limited')return 'יותר מדי בקשות כרגע. נסה שוב בעוד דקה.';
   return 'משהו השתבש בחיבור למאמן. נסה שוב.'}
 function profile(){const g=[...S.goalChips,S.goals].filter(Boolean).join(', ');
@@ -544,7 +547,7 @@ function loginView(){
    <input type="text" id="nameIn" autocomplete="given-name" placeholder="איך לקרוא לך? (לא חובה)" value="${esc(S.name||'')}">
    <div id="loginErr" class="small" style="color:var(--bad)" role="alert"></div>
    <button class="btn block" type="button" data-act="sendlink">${SB?'שלח לי קישור כניסה':'המשך'}</button>
-   <p class="small muted">${SB?'בלי סיסמה: נשלח לך קישור למייל. ההתקדמות נשמרת בחשבון ומחכה לך בכל מכשיר.':'אין חיבור לשרת כרגע, אז ההתקדמות תישמר רק במכשיר הזה.'}</p></div>`}
+   <p class="small muted">${SB?'בלי סיסמה: נשלח לך קישור למייל. ההתקדמות נשמרת בחשבון ומחכה לך בכל מכשיר.':'אין חיבור לשרת כרגע, אז ההתקדמות תישמר רק במכשיר הזה.'}</p><p class="small muted">בהתחברות אתה מסכים ל<a href="terms.html" target="_blank">תנאי השימוש</a> ול<a href="privacy.html" target="_blank">מדיניות הפרטיות</a>.</p></div>`}
 function focusOpts(){return [...nonSport().map(a=>({k:a,n:AREAS[a].name})),...(S.areas.includes('sport')?S.sports.map(k=>({k,n:SPORTS[k].name})):[])]}
 function steps(){return ['lang','areas',S.areas.includes('sport')?'sports':null,'goals',nonSport().some(a=>['sleep','screen','study','language'].includes(a))?'details':null,'time'].filter(Boolean)}
 function onbView(){const L=steps();if(S.onbStep>=L.length)S.onbStep=L.length-1;const st=S.onbStep;const id=L[st];const N=L.length;
@@ -738,7 +741,19 @@ function openProfile(){const st=streakInfo();const nx=nextReward();const U=unloc
    <div class="eyebrow">רקעים</div><div class="rgrid">${REWARDS.filter(r=>r.type==='bg').map(tile).join('')}<button class="rw" type="button" data-act="look" data-type="bg" data-id="" aria-pressed="${!S.look?.bg}"><span class="sw" style="background:var(--bg);border:1px solid var(--line)"></span><span>רגיל</span></button></div>
    <div class="eyebrow">מסגרות</div><div class="rgrid">${REWARDS.filter(r=>r.type==='frame').map(tile).join('')}</div>
    <div class="eyebrow">תגים</div><div class="rgrid">${REWARDS.filter(r=>r.type==='badge').map(tile).join('')}</div>
-   <div class="row" style="justify-content:center;margin-top:6px"><button class="chip small" data-act="reset">איפוס</button>${USER?'<button class="chip small" data-act="logout">יציאה</button>':''}</div>`)}
+   <div class="row" style="justify-content:center;margin-top:6px;flex-wrap:wrap;gap:6px"><button class="chip small" data-act="reset">איפוס</button>${USER?'<button class="chip small" data-act="logout">יציאה</button>':''}<a class="chip small" href="${bugMail()}">🐞 דווח על בעיה</a></div>
+   <p class="small muted" style="text-align:center;margin:4px 0 0"><a href="privacy.html" target="_blank">מדיניות פרטיות</a> · <a href="terms.html" target="_blank">תנאי שימוש</a>${USER?' · <button class="linkbtn" data-act="delacct">מחיקת החשבון</button>':''}</p>`)}
+function bugMail(){const b=`גרסה: ${APP_VER}\nטלפון: ${navigator.userAgent}\n\nמה קרה?\n\nמה ציפית שיקרה?\n`;return `mailto:mypathservice8@gmail.com?subject=${encodeURIComponent('בעיה ב-Personal Life Coach')}&body=${encodeURIComponent(b)}`}
+function openDelete(){sheet(`${head('מחיקת החשבון','בטוח?')}
+   <p>המחיקה מוחקת לצמיתות את החשבון ואת כל מה ששמור בו: התוכנית, השיחות עם המאמן, ההתקדמות, הרצפים, הפרסים ודקות המשחק. אי אפשר לשחזר.</p>
+   <label class="small" for="delConfirm">כדי לאשר, כתוב <b>מחק</b>:</label><input type="text" id="delConfirm" autocomplete="off">
+   <button class="btn block" style="background:var(--bad);border-color:var(--bad)" data-act="delgo">מחק את החשבון לצמיתות</button>
+   <button class="btn block ghost" data-act="close">ביטול</button><div id="delOut"></div>`)}
+async function deleteAccount(){if(($('#delConfirm')?.value||'').trim()!=='מחק'){$('#delOut').innerHTML='<p class="small" style="color:var(--bad)">כתוב "מחק" כדי לאשר.</p>';return}
+  $('#delOut').innerHTML='<p class="small muted">מוחק…</p>';
+  try{const {data,error}=await SB.functions.invoke('ask-coach',{body:{mode:'delete_account'}});if(error||!data?.ok)throw error||new Error('fail');
+    try{localStorage.clear()}catch(e){}try{await SB.auth.signOut()}catch(e){}closeSheet();USER=null;S=fresh();lastSent='';setAI();render();toast('החשבון נמחק. תודה שהיית איתנו 🙏')}
+  catch(e){$('#delOut').innerHTML='<p class="small" style="color:var(--bad)">המחיקה לא הצליחה כרגע. נסה שוב, או כתוב לנו ל-mypathservice8@gmail.com ונמחק ידנית.</p>'}}
 /* ---------- live technique check: skeleton on the camera (MediaPipe pose) ---------- */
 const LIVE_EX={
  pushup:{name:'שכיבות סמיכה',kind:'reps',sig:'arm',full:0.65,joint:'elbow',down:105,up:155,line:true,tip:'הנח את הטלפון על הרצפה, מהצד או מלפנים, שהכתפיים והידיים ייכנסו',al:['שכיבות סמיכה','שכיבה','push up','pushup','push-up']},
@@ -1575,6 +1590,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
     case'gameplay':startGame(t.dataset.k);break;
     case'gameclose':closeGame();break;
     case'gameearn':closeGame();openLivePicker();break;
+    case'delacct':openDelete();break;
+    case'delgo':deleteAccount();break;
     case'livedeep':liveDeep();break;
     case'liveask':{closeSheet();S.tab='coach';save();render();sendChat(`עשיתי בדיקה חיה עם השלד: ${t.dataset.name}. התוצאה: ${t.dataset.sum}. תסביר לי לעומק איך לתקן ואיך להתקדם.`)}break;
   case'look':{const ty=t.dataset.type,id=t.dataset.id;S.look=S.look||{};S.look[ty]=id;save();applyLook();render();openProfile();break}
@@ -1645,7 +1662,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='emai
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='customIn'||e.target.id==='areaIn')){e.preventDefault();const id=e.target.id;(id==='areaIn'?addArea:addCustom)(e.target.value);save();render();setTimeout(()=>$('#'+id)?.focus(),0)}});
 render();
 /* ---------- updates: when a new version is published, show it and load it ---------- */
-const APP_VER='20261104211010';
+const APP_VER='20261105073553';
 function updScreen(html){let d=$('#upd');if(!d){d=document.createElement('div');d.id='upd';d.className='upd';document.body.append(d)}d.innerHTML=`<div class="upd-box" dir="rtl" lang="he">${html}</div>`}
 async function checkUpdate(){if(location.protocol!=='https:'||LIVE)return;let j;try{j=await (await fetch('version.json?t='+Date.now(),{cache:'no-store'})).json()}catch(e){return}
   if(!j?.ver||j.ver===APP_VER)return;const key='upd-'+j.ver;let n=0;try{n=+sessionStorage.getItem(key)||0;sessionStorage.setItem(key,n+1)}catch(e){n=9}

@@ -18,6 +18,10 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const MODEL = "claude-sonnet-5";
 const MAX_IMAGES = 4;
 const MAX_MESSAGES = 40;
+// Daily allowance per user, so one person cannot spend the whole AI budget.
+// "heavy" = a request with pictures (video / food / proof analysis).
+const DAILY_CALLS = Number(Deno.env.get("DAILY_CALLS") ?? 30);
+const DAILY_HEAVY = Number(Deno.env.get("DAILY_HEAVY") ?? 5);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -55,8 +59,31 @@ Deno.serve(async (req) => {
     return json({ error: { message: "Sign in to talk to the coach" } }, 401);
   }
 
+  // Service-role client: only used here on the server, for the usage counter and account deletion.
+  const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
   try {
     const body = await req.json();
+
+    // Delete the account: data first, then the login itself (required by Google Play and the App Store).
+    if (body.mode === "delete_account") {
+      await admin.from("app_state").delete().eq("user_id", user.id);
+      await admin.from("ai_usage").delete().eq("user_id", user.id);
+      const { error } = await admin.auth.admin.deleteUser(user.id);
+      if (error) return json({ error: { message: error.message } }, 500);
+      return json({ ok: true });
+    }
+
+    // Daily allowance
+    const heavy = Array.isArray(body.images) && body.images.length > 0 || body.mode === "vision";
+    const day = new Date().toISOString().slice(0, 10);
+    const { data: use } = await admin.from("ai_usage").select("calls,heavy").eq("user_id", user.id).eq("day", day).maybeSingle();
+    const calls = use?.calls ?? 0, heavyUsed = use?.heavy ?? 0;
+    if (calls >= DAILY_CALLS || (heavy && heavyUsed >= DAILY_HEAVY)) {
+      return json({ error: { message: "daily_limit", kind: heavy && heavyUsed >= DAILY_HEAVY ? "heavy" : "calls", limit: heavy ? DAILY_HEAVY : DAILY_CALLS } }, 429);
+    }
+    await admin.from("ai_usage").upsert({ user_id: user.id, day, calls: calls + 1, heavy: heavyUsed + (heavy ? 1 : 0) });
+
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!apiKey) {
       return json({ error: { message: "ANTHROPIC_API_KEY not set on server" } }, 500);
