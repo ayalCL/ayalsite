@@ -451,6 +451,7 @@ function makeAI(){
     const raw=typeof input==='string'?[{role:'user',content:input}]:input.map(m=>({role:m.role,content:String(m.content)}));
     const msgs=[];for(const m of raw){const l=msgs[msgs.length-1];if(l&&l.role===m.role)l.content+='\n\n'+m.content;else msgs.push({...m})}
     if(msgs[0]?.role!=='user')msgs.unshift({role:'user',content:'שלום'});
+    if(S.lang==='en'){const l=msgs[msgs.length-1];l.content+='\n\n[Write every word the user will read in English, including all text values inside JSON. Keep JSON keys as they are.]'}
     const images=opts.images?await Promise.all(Array.from(opts.images).slice(0,4).map(prepImage)):[];
     const {data,error}=await SB.functions.invoke('ask-coach',{body:{mode:'chat',messages:msgs,images,json:!!opts.json,max_tokens:opts.max||1200}});
     if(error){const st=error.context?.status;let info=null;try{info=await error.context.json()}catch(e){}
@@ -511,7 +512,7 @@ function installView(){
    <div class="banner">בכניסה הראשונה מהאייקון, התחבר עם <b>הקוד</b> שמגיע במייל.</div>
    <div style="text-align:center;font-size:30px;color:var(--accent);margin-top:4px" aria-hidden="true">↓</div>`+cont}
 function render(){
-  const app=$('#app');try{applyLook()}catch(e){}
+  const app=$('#app');try{applyLook()}catch(e){}try{applyLang()}catch(e){}
   $('#nav').classList.toggle('hidden',S.stage!=='app');
   $('#composer').classList.toggle('hidden',!(S.stage==='app'&&S.tab==='coach'));
   document.querySelectorAll('.nav [data-tab]').forEach(b=>b.setAttribute('aria-current',b.dataset.tab===(S.tab==='coach'?'home':S.tab)?'page':'false'));
@@ -1210,7 +1211,7 @@ function energyLine(){const e=S.energy[today()];
   return 'איך אתה מרגיש היום? זה משנה את התוכנית.'}
 function homeView(){const h=new Date().getHours();const hi=h<12?'בוקר טוב':h<18?'צהריים טובים':'ערב טוב';
     return `<div class="stack">
-  <div class="onbg"><div class="eyebrow">${new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'})}</div><h1 class="disp" style="font-size:48px">${hi}${S.name?', '+esc(S.name):''}</h1></div>
+  <div class="onbg"><div class="eyebrow">${new Date().toLocaleDateString(LOC(),{weekday:'long',day:'numeric',month:'long'})}</div><h1 class="disp" style="font-size:48px">${hi}${S.name?', '+esc(S.name):''}</h1></div>
   ${S.avatar?'':`<section class="card"><div class="row" style="gap:12px;flex-wrap:nowrap">${avatarHtml(false)}<div style="flex:1;min-width:0"><div class="t">הוסף תמונת פרופיל</div><div class="small muted">ככה החברים יזהו אותך, והמסגרות שתרוויח יופיעו עליה.</div></div></div><label for="avatarIn" class="btn ghost block" style="cursor:pointer">📷 בחר תמונה</label><input type="file" id="avatarIn" accept="image/*" class="hidden"></section>`}
   ${(()=>{const last=[...S.chat].reverse().find(m=>m.role==='assistant');const txt=last?last.content:`היי${S.name?' '+S.name:''}! אני המאמן האישי שלך. ספר לי איך היה היום, או שאל אותי כל דבר על אימון, תזונה או שינה.`;
     return `<section class="card coachcard"><div class="row" style="gap:10px;flex-wrap:nowrap"><div class="coachav" aria-hidden="true">🧑‍🏫</div><div><div class="t">המאמן שלך</div><div class="small muted">${AI?'מחובר · עונה תוך שניות':'מצב הדגמה'}</div></div></div>
@@ -1224,15 +1225,15 @@ function homeView(){const h=new Date().getHours();const hi=h<12?'בוקר טוב
    <p class="small muted" style="margin:0">כל חזרה או שנייה בהחזקה מול המצלמה = דקת משחק.</p>
    <div class="row" style="gap:8px"><button class="btn" style="flex:1" data-act="games">שחק</button><button class="btn ghost" style="flex:1" data-act="live">להרוויח עוד</button></div></section>
   ${hasSport()?`<section class="card"><div class="eyebrow">בדיקה חיה 🦴</div><h3>הראה למאמן איך אתה מבצע</h3>${homeTotals()}<button class="btn block" data-act="live">פתח מצלמה עם שלד</button></section>`:''}
-  <section class="card"><div class="row between"><div class="eyebrow">צעדים היום</div><span class="small muted num">יעד ${S.stepGoal.toLocaleString('he-IL')}</span></div>
-   ${(()=>{const st=S.steps[today()]||0,pc=Math.min(100,Math.round(st/S.stepGoal*100));return `<div class="row between" style="align-items:flex-end"><span class="disp" style="font-size:52px">${st.toLocaleString('he-IL')}</span><span class="small ${pc>=100?'':'muted'}" style="${pc>=100?'color:var(--good);font-weight:700':''}">${pc>=100?'עברת את היעד!':pc+'% מהיעד'}</span></div>
+  <section class="card"><div class="row between"><div class="eyebrow">צעדים היום</div><span class="small muted num">יעד ${S.stepGoal.toLocaleString(LOC())}</span></div>
+   ${(()=>{const st=S.steps[today()]||0,pc=Math.min(100,Math.round(st/S.stepGoal*100));return `<div class="row between" style="align-items:flex-end"><span class="disp" style="font-size:52px">${st.toLocaleString(LOC())}</span><span class="small ${pc>=100?'':'muted'}" style="${pc>=100?'color:var(--good);font-weight:700':''}">${pc>=100?'עברת את היעד!':pc+'% מהיעד'}</span></div>
    <div class="bar"><i style="width:${pc}%"></i></div>`})()}
    <div class="addrow"><input type="text" inputmode="numeric" id="stepsIn" placeholder="הקלד מספר צעדים"><button class="btn ghost" type="button" data-act="steps">עדכן</button></div>
    <label class="btn line block small" for="stepsShot" style="cursor:pointer">או העלה צילום מסך מאפליקציית הבריאות</label><input type="file" id="stepsShot" accept="image/*" class="hidden">
    <p class="small muted">באפליקציה המלאה הצעדים יגיעו אוטומטית מ-Apple Health או Google Fit.</p></section>
-  <section class="card"><div class="row between"><div class="eyebrow">קלוריות היום</div><span class="small muted num">יעד ${S.kcalGoal.toLocaleString('he-IL')}</span></div>
+  <section class="card"><div class="row between"><div class="eyebrow">קלוריות היום</div><span class="small muted num">יעד ${S.kcalGoal.toLocaleString(LOC())}</span></div>
    ${(()=>{const M=S.meals[today()]||[];const k=M.reduce((a,m)=>a+m.kcal,0),pr=M.reduce((a,m)=>a+m.protein,0),pc=Math.min(100,Math.round(k/S.kcalGoal*100));
-    return `<div class="row between" style="align-items:flex-end"><span class="disp" style="font-size:52px">${k.toLocaleString('he-IL')} <span style="font-size:22px">קק״ל</span></span><span class="num small">${pr} גר׳ חלבון</span></div>
+    return `<div class="row between" style="align-items:flex-end"><span class="disp" style="font-size:52px">${k.toLocaleString(LOC())} <span style="font-size:22px">קק״ל</span></span><span class="num small">${pr} גר׳ חלבון</span></div>
     <div class="bar"><i style="width:${pc}%"></i></div>
     ${M.map((m,i)=>`<div class="hist">${m.thumb?`<img src="${m.thumb}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:8px">`:''}<div style="flex:1;min-width:0"><div class="t">${esc(m.name)}</div><div class="small muted num">${esc(m.time)} · ${m.protein} גר׳ חלבון</div></div><span class="num">${m.kcal}</span><button class="x" data-act="delmeal" data-i="${i}" aria-label="מחק">×</button></div>`).join('')||'<p class="small muted">עוד לא סרקת ארוחות היום.</p>'}`})()}
    <button class="btn" data-act="food">סרוק ארוחה</button></section>
@@ -1241,7 +1242,7 @@ function homeView(){const h=new Date().getHours();const hi=h<12?'בוקר טוב
 function planView(){const {items,fromReport,fromAI,note}=planItems();const done=S.done[today()]||{};const inj=activeInj();
   const nDone=items.filter((_,i)=>done[i]).length;
   return `<div class="stack">
-  <div class="onbg"><div class="eyebrow">${new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'})}</div><h1 class="disp" style="font-size:48px">התוכנית להיום</h1></div>
+  <div class="onbg"><div class="eyebrow">${new Date().toLocaleDateString(LOC(),{weekday:'long',day:'numeric',month:'long'})}</div><h1 class="disp" style="font-size:48px">התוכנית להיום</h1></div>
   <section class="card"><div class="row between"><div class="eyebrow">CHECK-IN · <span class="num">${esc(S.checkin)}</span></div></div>
    <div class="row">${[['low','אנרגיה נמוכה'],['mid','רגיל'],['high','מלא אנרגיה']].map(([k,l])=>`<button class="chip" data-act="energy" data-k="${k}" aria-pressed="${S.energy[today()]===k}">${l}</button>`).join('')}</div>
    <div class="coachline">${energyLine()}</div></section>
@@ -1645,7 +1646,7 @@ async function sendMedia(f){if(chatBusy)return;const box=$('#msgs');const b=docu
 async function readSteps(f){if(!(AI&&IMG)){toast('קריאת צילום מסך עובדת כשהמאמן AI מחובר. בינתיים הקלד את המספר');return}
   toast('קורא את הצעדים מהתמונה…');
   try{const r=await AI.json('זהו צילום מסך מאפליקציית בריאות או כושר. מצא את מספר הצעדים של היום. החזר רק JSON: {"steps":1234} או {"steps":null} אם אין מספר צעדים בתמונה.',{images:[f],modelTier:'quick'});
-   const n=parseInt(r?.steps);if(!n){toast('לא מצאתי מספר צעדים בתמונה');return}S.steps[today()]=n;save();render();toast(`עודכן: ${n.toLocaleString('he-IL')} צעדים`)}
+   const n=parseInt(r?.steps);if(!n){toast('לא מצאתי מספר צעדים בתמונה');return}S.steps[today()]=n;save();render();toast(`עודכן: ${n.toLocaleString(LOC())} צעדים`)}
   catch(e){toast(aiFail(e))}}
 document.addEventListener('input',e=>{if(e.target.id==='painR'){IJ.pain=+e.target.value;$('#painV').textContent=IJ.pain}if(e.target.id==='injOther'&&IJ)IJ.other=e.target.value});
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList?.contains('spot')){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}))}});
@@ -1661,8 +1662,31 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='codeI
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='emailIn'||e.target.id==='nameIn')){e.preventDefault();$('[data-act=sendlink]')?.click()}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='customIn'||e.target.id==='areaIn')){e.preventDefault();const id=e.target.id;(id==='areaIn'?addArea:addCustom)(e.target.value);save();render();setTimeout(()=>$('#'+id)?.focus(),0)}});
 render();
+/* ---------- English interface: the app is written in Hebrew; in English mode every Hebrew text on screen is
+   swapped from en.json (exact text first, then each known phrase inside a longer text). ---------- */
+let EN=null,EN_RE=null,EN_LOADING=null;const EN_CACHE=new Map();const HEB=/[֐-׿]/;
+function loadEN(){if(EN||EN_LOADING)return EN_LOADING;EN_LOADING=fetch('en.json').then(r=>r.json()).then(d=>{EN=d;
+  const keys=Object.keys(d).filter(k=>k.length>=2).sort((a,b)=>b.length-a.length).map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+  EN_RE=new RegExp('(?<![\\u0590-\\u05FF])('+keys.join('|')+')(?![\\u0590-\\u05FF])','g');applyLang()}).catch(()=>{EN_LOADING=null});return EN_LOADING}
+function trEN(t){if(!EN||!HEB.test(t))return t;if(EN_CACHE.has(t))return EN_CACHE.get(t);const k=t.trim();let o;
+  if(EN[k]!=null)o=t.replace(k,EN[k]);else o=t.replace(EN_RE,m=>EN[m]??m);if(EN_CACHE.size>5000)EN_CACHE.clear();EN_CACHE.set(t,o);return o}
+function trTree(root){if(S.lang!=='en'||!EN||!root)return;
+  if(root.nodeType===3){const v=root.nodeValue;if(HEB.test(v)){const n=trEN(v);if(n!==v)root.nodeValue=n}return}
+  if(root.nodeType!==1)return;
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode())){const v=n.nodeValue;if(HEB.test(v)){const x=trEN(v);if(x!==v)n.nodeValue=x}}
+  for(const el of [root,...root.querySelectorAll('[placeholder],[title],[aria-label],[dir="rtl"]')]){
+    for(const a of ['placeholder','title','aria-label']){const v=el.getAttribute?.(a);if(v&&HEB.test(v))el.setAttribute(a,trEN(v))}
+    if(el.getAttribute?.('dir')==='rtl')el.setAttribute('dir','ltr')}}
+let LANG_OBS=null;
+function applyLang(){const en=S.lang==='en';document.documentElement.lang=en?'en':'he';document.documentElement.dir=en?'ltr':'rtl';
+  if(!en){LANG_OBS?.disconnect();LANG_OBS=null;return}
+  if(!EN){loadEN();return}
+  trTree(document.body);document.title=trEN(document.title);
+  if(!LANG_OBS){LANG_OBS=new MutationObserver(ms=>{if(S.lang!=='en')return;for(const m of ms){if(m.type==='characterData')trTree(m.target);else m.addedNodes.forEach(trTree);if(m.type==='attributes')trTree(m.target)}});
+    LANG_OBS.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['placeholder','title','aria-label']})}}
+const LOC=()=>S.lang==='en'?'en-US':'he-IL';
 /* ---------- updates: when a new version is published, show it and load it ---------- */
-const APP_VER='20261105225020';
+const APP_VER='20261105232713';
 function updScreen(html){let d=$('#upd');if(!d){d=document.createElement('div');d.id='upd';d.className='upd';document.body.append(d)}d.innerHTML=`<div class="upd-box" dir="rtl" lang="he">${html}</div>`}
 let UPD_T=0;async function checkUpdate(){if(location.protocol!=='https:'||LIVE||Date.now()-UPD_T<5000)return;UPD_T=Date.now();let j;try{j=await (await fetch('version.json?t='+Date.now(),{cache:'no-store'})).json()}catch(e){return}
   if(!j?.ver||j.ver===APP_VER)return;const key='upd-'+j.ver;let n=0;try{n=+sessionStorage.getItem(key)||0;sessionStorage.setItem(key,n+1)}catch(e){n=9}
