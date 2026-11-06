@@ -1695,7 +1695,7 @@ function applyLang(){const en=S.lang==='en';document.documentElement.lang=en?'en
     LANG_OBS.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['placeholder','title','aria-label']})}}
 const LOC=()=>S.lang==='en'?'en-US':'he-IL';
 /* ---------- updates: when a new version is published, show it and load it ---------- */
-const APP_VER='20261105232713';
+const APP_VER='20261106224305';
 function updScreen(html){let d=$('#upd');if(!d){d=document.createElement('div');d.id='upd';d.className='upd';document.body.append(d)}d.innerHTML=`<div class="upd-box" dir="rtl" lang="he">${html}</div>`}
 let UPD_T=0;async function checkUpdate(){if(location.protocol!=='https:'||LIVE||Date.now()-UPD_T<5000)return;UPD_T=Date.now();let j;try{j=await (await fetch('version.json?t='+Date.now(),{cache:'no-store'})).json()}catch(e){return}
   if(!j?.ver||j.ver===APP_VER)return;const key='upd-'+j.ver;let n=0;try{n=+sessionStorage.getItem(key)||0;sessionStorage.setItem(key,n+1)}catch(e){n=9}
