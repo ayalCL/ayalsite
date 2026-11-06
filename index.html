@@ -322,6 +322,14 @@ function fresh(){return{stage:'login',name:'',sports:[],first:'',checkin:'19:00'
   email:'',lang:'he',custom:[],goalChips:[],goals:'',level:'',days:3,minutes:60,when:'',quit:[],past:'',
   metrics:{},avatar:'',look:{bg:'',frame:'',badge:''},bestStreak:0,seenRewards:[],steps:{},stepGoal:8000,meals:{},kcalGoal:2400,areas:[],customAreas:[],focus:'',bed:'23:30',wake:'07:00',screenNow:5,screenGoal:3,studyWhat:'',newLang:'',langLevel:''}}
 let S;try{S=Object.assign(fresh(),JSON.parse(localStorage.getItem(KEY))||{})}catch(e){S=fresh()}
+// Old or damaged saved data must never leave a blank screen: any field with the wrong type goes back to its default.
+function fixState(){const F=fresh();for(const k of Object.keys(F)){const d=F[k],v=S[k];if(d===null)continue;
+  if(Array.isArray(d)){if(!Array.isArray(v))S[k]=d}
+  else if(typeof d==='object'){if(!v||typeof v!=='object'||Array.isArray(v))S[k]=d}
+  else if(typeof d==='number'){if(typeof v!=='number'||!isFinite(v))S[k]=(v!=null&&isFinite(+v)&&v!=='')?+v:d}
+  else if(typeof d==='string'){if(typeof v!=='string')S[k]=typeof v==='number'?String(v):d}}
+  if(S.chat.some(m=>!m||typeof m.content!=='string'))S.chat=S.chat.filter(m=>m&&typeof m.content==='string')}
+fixState();
 function makeCustom(name){return{name,sub:'התחום שלך',custom:true,
   plan:[['חימום','10 דק׳: הדרגתי, לפי התחום'],[`תרגול טכניקה: ${name}`,'20 דק׳ ממוקדות בדבר אחד שאתה רוצה לשפר'],['עבודה בעצימות','15-20 דק׳ לפי היכולת שלך'],['שחרור ומתיחות','8 דק׳']],
   ex:['טכניקה כללית','תנועה מרכזית'],metric:{label:'דקות אימון בשבוע',unit:'',q:'כמה דקות התאמנת השבוע?',ph:'למשל 90',vals:[60,90,90,120,150]}}}
@@ -399,12 +407,12 @@ async function loadRemote(){if(!USER)return;
   try{const {data,error}=await withTimeout(SB.from('app_state').select('state').eq('user_id',USER.id).maybeSingle(),10000);if(error)throw error;
     const r=data?.state;
     const takeRemote=r&&r.stage==='app'&&(S.stage!=='app'?S.onbStep<=1:(!S.updated||(r.updated||0)>=S.updated));
-    if(takeRemote){const keep={uid:USER.id,email:USER.email};S=Object.assign(fresh(),r,keep);rebuildCustom();dropDemo();lastSent=JSON.stringify(r);S.tab='home';
+    if(takeRemote){const keep={uid:USER.id,email:USER.email};S=Object.assign(fresh(),r,keep);fixState();rebuildCustom();dropDemo();lastSent=JSON.stringify(r);S.tab='home';
       try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
       toast(`ברוך שובך${S.name?', '+S.name:''}!`)}
     REMOTE_READY=true;SYNC='cloud';BOOT=false;render();save();
     if(S.stage==='app'&&!(S.aiPlan?.date===today())&&!(S.reports.at(-1)?.tomorrow?.length&&S.reports.at(-1).date!==today()))buildAIPlan()}
-  catch(e){console.warn('load failed, retrying',e);setSync('error');if(BOOT){BOOT=false;render()}setTimeout(loadRemote,8000)}}
+  catch(e){console.warn('load failed, retrying',e);setSync('error');if(BOOT||!$('#app').innerHTML.trim()){BOOT=false;render()}setTimeout(loadRemote,8000)}}
 (async()=>{if(!SB)return;
   SB.auth.onAuthStateChange((ev,session)=>{if(session?.user&&(ev==='SIGNED_IN'||ev==='INITIAL_SESSION'))setTimeout(()=>onSignedIn(session),0)});
   try{const {data:{session}}=await SB.auth.getSession();if(session?.user)await onSignedIn(session);else{BOOT=false;render()}}
@@ -521,7 +529,9 @@ function render(){
   if(BOOT&&S.stage!=='app'){app.innerHTML=`<div class="hero" style="text-align:center"><div class="brand" style="font-size:30px">Personal <b>Life</b> Coach</div><p class="muted" style="margin-top:18px">טוען את החשבון שלך…</p></div>`;return}
   if(S.stage==='login')app.innerHTML=loginView();
   else if(S.stage==='onb')app.innerHTML=onbView();
-  else app.innerHTML=topBar()+(S.tab==='home'?homeView():S.tab==='plan'?planView():S.tab==='coach'?coachView():progressView());
+  else{try{app.innerHTML=topBar()+(S.tab==='home'?homeView():S.tab==='plan'?planView():S.tab==='coach'?coachView():progressView())}
+   catch(e){console.error('view failed',e);fixState();let html='';try{html=topBar()+(S.tab==='home'?homeView():S.tab==='plan'?planView():S.tab==='coach'?coachView():progressView())}catch(e2){}
+    app.innerHTML=html||`<div class="hero" style="text-align:center"><div class="brand" style="font-size:30px">Personal <b>Life</b> Coach</div><p class="muted" style="margin-top:18px">משהו השתבש בטעינת המסך.</p><button class="btn" onclick="location.reload()">נסה שוב</button><p class="small muted" dir="ltr" style="margin-top:14px;overflow-wrap:anywhere">${esc(String(e&&e.message||e))}</p></div>`}}
   aiBadge();
   if(S.stage==='app'&&S.tab==='coach'){renderSugg();scrollTo(0,document.body.scrollHeight)}
 }
@@ -1661,7 +1671,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='liveQ
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='codeIn'){e.preventDefault();verifyCode()}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='emailIn'||e.target.id==='nameIn')){e.preventDefault();$('[data-act=sendlink]')?.click()}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='customIn'||e.target.id==='areaIn')){e.preventDefault();const id=e.target.id;(id==='areaIn'?addArea:addCustom)(e.target.value);save();render();setTimeout(()=>$('#'+id)?.focus(),0)}});
-render();
 /* ---------- English interface: the app is written in Hebrew; in English mode every Hebrew text on screen is
    swapped from en.json (exact text first, then each known phrase inside a longer text). ---------- */
 let EN=null,EN_RE=null,EN_LOADING=null;const EN_CACHE=new Map();const HEB=/[֐-׿]/;
@@ -1698,6 +1707,7 @@ let UPD_T=0;async function checkUpdate(){if(location.protocol!=='https:'||LIVE||
 setTimeout(checkUpdate,1500);setInterval(checkUpdate,10*60*1000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpdate()});
 if('serviceWorker' in navigator&&location.protocol==='https:'){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+render();   // last, after every const/let above exists
 </script>
 </body>
 </html>
