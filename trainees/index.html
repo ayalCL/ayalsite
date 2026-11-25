@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>המאמן שלי</title>
+<meta name="description" content="סריקת קלוריות, תוכנית אימון ומאמן אישי למתאמנים">
+<meta name="theme-color" content="#F4F1EC">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap">
+<style>
+/* Tokens */
+:root{
+  --bg:#F4F1EC; --surface:#FFFFFF; --surface-2:#EFEBE4; --ink:#1A1A17; --muted:#6A665E; --line:#DDD7CC;
+  --accent:#2F6B4F; --accent-ink:#FFFFFF; --accent-soft:#DCEBE2;
+  --p:#C2541B; --c:#2C6CB0; --f:#B58A12;
+  --bad:#B3362A; --bad-soft:#F7DEDA; --r:16px; color-scheme:light; --display:'Heebo',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121411; --surface:#1B1E1A; --surface-2:#252923; --ink:#EEF0EA; --muted:#A3A79C; --line:#33382F;
+  --accent:#6CC497; --accent-ink:#0C1A12; --accent-soft:#1E3328;
+  --p:#F08A52; --c:#6FA8E8; --f:#E2BC4A; --bad:#F07A6C; --bad-soft:#3A1F1B; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121411; --surface:#1B1E1A; --surface-2:#252923; --ink:#EEF0EA; --muted:#A3A79C; --line:#33382F;
+  --accent:#6CC497; --accent-ink:#0C1A12; --accent-soft:#1E3328;
+  --p:#F08A52; --c:#6FA8E8; --f:#E2BC4A; --bad:#F07A6C; --bad-soft:#3A1F1B; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Heebo',system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.55;-webkit-text-size-adjust:100%}
+.wrap{max-width:560px;margin:0 auto;padding:16px 16px calc(96px + env(safe-area-inset-bottom,0px))}
+h1{font-size:30px;line-height:1.15;margin:8px 0 4px;font-weight:800;letter-spacing:-.01em}
+h2{font-size:20px;margin:0 0 8px;font-weight:800}
+p{margin:0 0 8px}
+.muted{color:var(--muted)}.small{font-size:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:12px 0}
+.row{display:flex;gap:8px;align-items:center}.between{justify-content:space-between}.wrapr{flex-wrap:wrap}
+.btn{appearance:none;border:0;border-radius:12px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:700;padding:12px 16px;cursor:pointer;min-height:46px}
+.btn.block{display:block;width:100%;text-align:center}
+.btn.ghost{background:var(--surface-2);color:var(--ink)}
+.btn:disabled{opacity:.55;cursor:default}
+label.f{display:block;font-size:14px;font-weight:700;margin:12px 0 4px}
+input[type=text],input[type=email],input[type=number],textarea,select{width:100%;font:inherit;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink)}
+textarea{min-height:80px;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.big{font-size:40px;font-weight:800;line-height:1}
+.bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:4px}
+.bar>i{display:block;height:100%;border-radius:99px}
+.macro{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.macro .v{font-weight:800;font-size:18px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th,.tbl td{text-align:start;padding:6px 4px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.tbl th{font-weight:700;color:var(--muted);font-size:12px}
+.meal{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.meal:last-child{border-bottom:0}
+.meal img{width:48px;height:48px;border-radius:10px;object-fit:cover;flex:none}
+.meal .t{font-weight:700}
+.x{appearance:none;border:0;background:var(--surface-2);color:var(--muted);width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;flex:none}
+.banner{background:var(--accent-soft);border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
+.banner.bad{background:var(--bad-soft);color:var(--bad)}
+.nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:10}
+.nav div{display:flex;max-width:560px;width:100%}
+.nav button{flex:1;appearance:none;border:0;background:none;color:var(--muted);font:inherit;font-size:12px;padding:8px 0 10px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+.nav button svg{width:24px;height:24px}
+.nav button[aria-current="page"]{color:var(--accent);font-weight:700}
+.msgs{display:flex;flex-direction:column;gap:10px}
+.msg{max-width:88%;padding:10px 14px;border-radius:16px;white-space:normal;word-wrap:break-word}
+.msg.u{align-self:flex-start;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:4px}
+.msg.a{align-self:flex-end;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg ul,.msg ol{margin:4px 0;padding-inline-start:20px}
+.msg p{margin:0 0 6px}.msg p:last-child{margin:0}
+.think{color:var(--muted);font-style:italic}
+.composer{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom,0px));background:var(--bg);padding:8px 0;display:flex;gap:8px;align-items:flex-end}
+.composer textarea{min-height:46px;max-height:140px}
+.day{border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;background:var(--surface-2)}
+.day h3{margin:0 0 6px;font-size:16px}
+.ex{padding:6px 0;border-top:1px dashed var(--line)}
+.ex:first-of-type{border-top:0}
+.ex .n{font-weight:700}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:50;font-size:14px;max-width:90vw}
+.hidden{display:none}
+.live{position:fixed;inset:0;z-index:70;background:#000;color:#fff;overflow:hidden}
+.live video,.live canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.live #liveBg{display:none}.live.whole #liveBg{display:block}
+.live.mirror video,.live.mirror canvas{transform:scaleX(-1)}
+.live #liveBg{object-fit:cover;filter:blur(22px) brightness(.5);transform:scale(1.15)}.live.mirror #liveBg{transform:scale(-1.15,1.15)}
+.live-top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 10px max(12px,env(safe-area-inset-left,0px));background:linear-gradient(rgba(0,0,0,.55),transparent)}
+.live-top .x{background:rgba(255,255,255,.18);color:#fff}
+.live-top .chip{background:rgba(255,255,255,.18);color:#fff;border-color:transparent}
+.live-name{font-weight:800;font-size:18px;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+.live-hud{position:absolute;top:calc(64px + env(safe-area-inset-top,0px));inset-inline-start:max(14px,env(safe-area-inset-right,0px));text-shadow:0 2px 10px rgba(0,0,0,.7)}
+.live-big{font-family:var(--display);font-size:84px;font-weight:700;line-height:.9}
+.live-sub{font-size:14px;font-weight:700;opacity:.9}
+.x-upd-unused{position:fixed;inset:0;z-index:90;background:rgba(232,235,238,.97);display:grid;place-items:center;padding:24px}.upd-box{max-width:340px;text-align:center;display:flex;flex-direction:column;gap:10px}.upd-spin{font-size:46px;animation:spin 1.4s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.live-msg.warn{background:rgba(214,150,20,.85)}
+.live-msg{position:absolute;left:12px;right:12px;bottom:calc(92px + env(safe-area-inset-bottom,0px));text-align:center;font-size:20px;font-weight:800;padding:10px 14px;border-radius:14px;background:rgba(0,0,0,.55)}
+.live-msg.good{background:rgba(29,122,76,.85)}
+.live-msg.bad{background:rgba(185,58,44,.85)}
+.live-bottom{position:absolute;left:0;right:0;bottom:0;padding:12px max(16px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:linear-gradient(transparent,rgba(0,0,0,.6))}
+.live .x{background:rgba(255,255,255,.18);color:#fff}
+.live .chip{font-size:13px;padding:6px 10px}
+.exgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 12px}
+.exbtn{appearance:none;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:12px;padding:12px 6px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
+.exbtn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.eyebrow{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.02em;margin-top:6px}
+.score{display:flex;gap:14px;align-items:center}
+.scorebig{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;font-size:28px;font-weight:800;flex:none;border:6px solid var(--accent);color:var(--ink)}
+.pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;background:var(--surface-2);color:var(--muted)}
+</style>
+</head>
+<body>
+<main class="wrap" id="app"></main>
+<nav class="nav" id="nav" hidden><div>
+  <button data-tab="food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>סריקת אוכל</button>
+  <button data-tab="tech"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="4.5" r="2"/><path d="M12 7v7M7 10l5-1 5 1M9 21l3-7 3 7"/></svg>טכניקה</button>
+  <button data-tab="workout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9v6M6 6v12M18 6v12M21 9v6M6 12h12"/></svg>אימון</button>
+  <button data-tab="coach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H9l-5 4z"/></svg>המאמן</button>
+  <button data-tab="me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>הפרופיל</button>
+</div></nav>
+
+<div id="live" class="live hidden" dir="rtl" lang="he">
+  <canvas id="liveBg"></canvas><video id="liveVid" playsinline muted autoplay></video><canvas id="liveCan"></canvas>
+  <div class="live-top"><button class="x" data-act="livestop" aria-label="סגור">×</button><div><div class="live-name" id="liveName"></div><div id="liveRes" style="font-size:11px;opacity:.6;text-align:center"></div></div><div class="row" style="gap:6px"><button class="chip" data-act="livefit" id="liveFitBtn">⤢ כל הפריים</button><button class="chip" data-act="liveflip">🔄 מצלמה</button></div></div>
+  <div class="live-hud"><div class="live-big" id="liveBig">0</div><div class="live-sub" id="liveSub"></div></div>
+  <div class="live-msg" id="liveMsg">מכין את השלד…</div>
+  <div class="live-bottom"><button class="btn block" data-act="livedone">סיימתי</button></div>
+</div>
+<script src="live.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+/* =========================================================
+   המאמן שלי – אתר למתאמנים
+   משתמש באותה תשתית כמו האפליקציה הראשית:
+   - Supabase לכניסה עם אימייל
+   - טבלה trainee_state לשמירת הנתונים (ראה trainees/setup.sql)
+   - הפונקציה ask-coach שמדברת עם Claude (המפתח נשאר בשרת)
+   הוסף ?demo לכתובת כדי לראות את האתר בלי כניסה ובלי AI אמיתי.
+   ========================================================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>new Date().toLocaleDateString('en-CA');
+const DEMO=/[?&]demo/.test(location.search);
+const KEY='trainee-state-v1';
+
+/* ---------- state ---------- */
+function fresh(){return{stage:'login',tab:'food',name:'',email:'',pendingEmail:'',
+  sex:'',age:'',height:'',weight:'',activity:'1.375',goal:'lose',diet:'',
+  meals:{},chat:[],plan:null,tech:[],planForm:{goal:'',days:3,minutes:45,place:'gym',level:'beginner',notes:''},updated:0}}
+let S;try{S=Object.assign(fresh(),JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){S=fresh()}
+if(DEMO&&S.stage==='login'){S.stage='profile';S.name='דני'}
+function save(){S.updated=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}clearTimeout(save.t);save.t=setTimeout(pushRemote,900)}
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.append(d);setTimeout(()=>d.remove(),3200)}
+
+/* ---------- daily targets (Mifflin-St Jeor) ---------- */
+const GOALS={lose:'ירידה במשקל',keep:'שמירה על המשקל',gain:'עלייה במסת שריר'};
+function targets(){const w=+S.weight,h=+S.height,a=+S.age;if(!w||!h||!a||!S.sex)return null;
+  const bmr=10*w+6.25*h-5*a+(S.sex==='m'?5:-161);let kcal=bmr*(+S.activity||1.375);
+  if(S.goal==='lose')kcal-=450;if(S.goal==='gain')kcal+=300;kcal=Math.round(kcal/10)*10;
+  const protein=Math.round(w*(S.goal==='keep'?1.6:2)),fat=Math.round(kcal*.27/9),carbs=Math.max(0,Math.round((kcal-protein*4-fat*9)/4));
+  return{kcal,protein,carbs,fat}}
+function profileLine(){const t=targets();
+  return `פרטי המתאמן: ${S.name||'לא נאמר שם'}, ${S.sex==='m'?'גבר':S.sex==='f'?'אישה':'מין לא צוין'}, גיל ${S.age||'?'}, גובה ${S.height||'?'} ס״מ, משקל ${S.weight||'?'} ק״ג. מטרה: ${GOALS[S.goal]}. ${S.diet?'העדפות / מגבלות תזונה: '+S.diet+'. ':''}${t?`יעד יומי: ${t.kcal} קק״ל, ${t.protein} גר׳ חלבון, ${t.carbs} גר׳ פחמימות, ${t.fat} גר׳ שומן. `:''}${dayLine()}${(S.tech||[]).length?' בדיקות טכניקה אחרונות: '+S.tech.slice(-3).map(h=>h.name+' '+h.score+'/10'+(h.fix?.length?' (לשפר: '+h.fix.join(', ')+')':'')).join('; ')+'.':''}${S.plan?' יש לו תוכנית אימון: '+S.plan.title+' ('+(S.plan.days||[]).length+' ימים בשבוע).':''}`}
+function dayTotals(d=today()){const M=S.meals[d]||[];const z={kcal:0,protein:0,carbs:0,fat:0,fiber:0,sugar:0,sodium:0};
+  M.forEach(m=>{for(const k in z)z[k]+=Number(m[k])||0});for(const k in z)z[k]=Math.round(z[k]);return z}
+function dayLine(){const M=S.meals[today()]||[];if(!M.length)return 'היום עוד לא רשם ארוחות.';const t=dayTotals();
+  return `היום אכל: ${M.map(m=>m.name).join(', ')} (סה״כ ${t.kcal} קק״ל, ${t.protein} גר׳ חלבון).`}
+
+/* ---------- Supabase ---------- */
+const SUPABASE_URL="https://xgltmkgayorkhvxwvhem.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_52XAO-p1ldQOmwO8daQ_Yw_nG90J31T";
+let SB=null;try{if(!DEMO&&window.supabase)SB=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY)}catch(e){SB=null}
+let USER=null,READY=false;
+function packForCloud(){const r=JSON.parse(JSON.stringify(S));r.chat=(r.chat||[]).slice(-80);
+  for(const d of Object.keys(r.meals||{}))if(d!==today())(r.meals[d]||[]).forEach(m=>m.thumb=null);return r}
+async function pushRemote(){if(!SB||!USER||!READY)return;
+  const {error}=await SB.from('trainee_state').upsert({user_id:USER.id,state:packForCloud(),updated_at:new Date().toISOString()});
+  if(error){console.warn(error);setTimeout(pushRemote,10000)}}
+async function onSignedIn(session){if(USER?.id===session.user.id)return;USER=session.user;
+  if(S.uid&&S.uid!==USER.id)S=fresh();S.uid=USER.id;S.email=USER.email;S.pendingEmail='';
+  try{const {data,error}=await SB.from('trainee_state').select('state').eq('user_id',USER.id).maybeSingle();if(error)throw error;
+    const r=data?.state;if(r&&(r.updated||0)>=(S.updated||0)){S=Object.assign(fresh(),r,{uid:USER.id,email:USER.email})}}
+  catch(e){console.warn('load failed',e)}
+  if(S.stage==='login')S.stage='profile';READY=true;save();render()}
+(async()=>{if(!SB)return;
+  SB.auth.onAuthStateChange((ev,s)=>{if(s?.user&&(ev==='SIGNED_IN'||ev==='INITIAL_SESSION'))setTimeout(()=>onSignedIn(s),0)});
+  try{const {data:{session}}=await SB.auth.getSession();if(session?.user)await onSignedIn(session);else render()}catch(e){render()}})();
+const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+async function sendLink(){const em=($('#emailIn')?.value||S.pendingEmail||'').trim().toLowerCase();const err=$('#loginErr');
+  if(!EMAIL_RE.test(em)){err.textContent='כתובת האימייל לא תקינה, למשל name@gmail.com';return}
+  const nm=$('#nameIn');if(nm)S.name=nm.value.trim();
+  if(!SB){S.email=em;S.stage='profile';save();render();return}
+  const b=$('[data-act=sendlink]');b.disabled=true;b.textContent='שולח…';
+  const {error}=await SB.auth.signInWithOtp({email:em,options:{emailRedirectTo:location.origin+location.pathname}});
+  b.disabled=false;b.textContent='שלח שוב';
+  if(error){err.textContent=/rate|seconds/i.test(error.message)?'נשלחו יותר מדי מיילים. חכה כמה דקות ונסה שוב.':'השליחה נכשלה: '+error.message;return}
+  S.pendingEmail=em;save();render();toast('נשלח! בדוק את המייל, גם בספאם')}
+async function verifyCode(){const code=($('#codeIn')?.value||'').replace(/\D/g,'');const err=$('#loginErr');
+  if(code.length<6){err.textContent='הקלד את כל הספרות מהמייל';return}
+  const {data,error}=await SB.auth.verifyOtp({email:S.pendingEmail,token:code,type:'email'});
+  if(error){err.textContent='הקוד לא נכון או שפג תוקפו';return}if(data?.session)onSignedIn(data.session)}
+async function signOut(){try{await SB?.auth.signOut()}catch(e){}USER=null;READY=false;S=fresh();try{localStorage.removeItem(KEY)}catch(e){}render()}
+
+/* ---------- AI (ask-coach) ---------- */
+async function prepImage(blob){const u=URL.createObjectURL(blob);try{const im=new Image();im.src=u;await im.decode();
+  const sc=Math.min(1,1280/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);
+  c.getContext('2d').drawImage(im,0,0,c.width,c.height);const d=c.toDataURL('image/jpeg',.85);return{mediaType:'image/jpeg',data:d.slice(d.indexOf(',')+1)}}finally{URL.revokeObjectURL(u)}}
+async function thumb(blob){const u=URL.createObjectURL(blob);try{const im=new Image();im.src=u;await im.decode();const c=document.createElement('canvas');const s=160/Math.max(im.width,im.height);c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.7)}catch(e){return null}finally{URL.revokeObjectURL(u)}}
+function parseJSONLoose(t){try{return JSON.parse(t)}catch(e){}const a=t.search(/[\[{]/),b=Math.max(t.lastIndexOf('}'),t.lastIndexOf(']'));if(a>=0&&b>a){try{return JSON.parse(t.slice(a,b+1))}catch(e){}}return undefined}
+async function ai(messages,opts={}){
+  if(!SB||!USER)return demoAI(messages,opts);
+  const images=opts.images?await Promise.all(opts.images.map(prepImage)):[];
+  const {data,error}=await SB.functions.invoke('ask-coach',{body:{mode:'chat',messages,images,json:!!opts.json,max_tokens:opts.max||1500}});
+  if(error){const st=error.context?.status;let info=null;try{info=await error.context.json()}catch(e){}
+    throw{code:st===401?'auth':st===429&&info?.error?.message==='daily_limit'?'daily':'fail',kind:info?.error?.kind,limit:info?.error?.limit}}
+  const text=(data?.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();if(!text)throw{code:'fail'};
+  if(!opts.json)return text;const v=parseJSONLoose(text);if(v===undefined)throw{code:'fail'};return v}
+function aiFail(e){if(e?.code==='auth')return 'צריך להתחבר מחדש.';
+  if(e?.code==='daily')return e.kind==='heavy'?`השתמשת היום בכל ${e.limit||5} הסריקות עם תמונה. אפשר לכתוב מה אכלת בלי תמונה, או לנסות מחר.`:`הגעת למכסת ההודעות להיום (${e.limit||30}). נמשיך מחר!`;
+  return 'משהו השתבש. נסה שוב בעוד רגע.'}
+const RULES='אתה המאמן האישי באתר של מאמן כושר. ענה תמיד בעברית, בגובה העיניים, מעשי וקצר. התאם כל תשובה לפרטי המתאמן. אם הוא מבקש תוכנית או מתכון, תן אותו מלא ומוכן לשימוש (כמויות, שלבים, ערכים תזונתיים משוערים למנה). אל תאבחן בעיות רפואיות: אם יש כאב חד, סחרחורת, הפרעת אכילה או מצב רפואי, הפנה לרופא או לדיאטנית. אל תמליץ על פחות מ-1200 קק״ל ביום.';
+
+/* ---------- demo answers (when there is no sign-in) ---------- */
+async function demoAI(messages,opts){await new Promise(r=>setTimeout(r,700));const q=messages.at(-1).content;
+  if(opts.kind==='food')return{items:[{name:'חזה עוף בגריל',amount:'150 גר׳',kcal:248,protein:46,carbs:0,fat:5,fiber:0,sugar:0,sodium:110},{name:'אורז לבן',amount:'כוס (160 גר׳)',kcal:205,protein:4,carbs:45,fat:0.4,fiber:0.6,sugar:0,sodium:2},{name:'סלט ירקות עם כף שמן זית',amount:'קערה',kcal:150,protein:2,carbs:8,fat:14,fiber:3,sugar:5,sodium:20}],note:'ארוחה מאוזנת עם הרבה חלבון. מצב הדגמה: הערכים לא מבוססים על מה ששלחת.'};
+  if(opts.kind==='plan')return localPlan();
+  if(/מתכון|חלבון/.test(q))return '**שקשוקת חלבון (מנה אחת)** – כ-420 קק״ל, 38 גר׳ חלבון\n\n- 2 ביצים + 3 חלבונים\n- 100 גר׳ קוטג׳ 5%\n- 2 עגבניות, חצי בצל, שן שום\n- פפריקה, כמון, מלח\n\n1. מטגנים בצל ושום בכפית שמן.\n2. מוסיפים עגבניות ותבלינים, 8 דקות.\n3. שוברים ביצים וחלבונים, מכסים 5 דקות.\n4. מגישים עם הקוטג׳ מעל.\n\n_מצב הדגמה. אחרי כניסה המאמן יענה לך באמת._';
+  return 'זו תשובת הדגמה. אחרי שתתחבר עם האימייל, המאמן יכיר את הפרטים שלך ויענה בדיוק על מה שביקשת.'}
+
+/* ---------- markdown-lite for coach messages ---------- */
+function md(t){const lines=esc(t).split('\n');let h='',list='';
+  const inl=s=>s.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/(^|[\s(])_(.+?)_(?=$|[\s.,)])/g,'$1<i>$2</i>');
+  const close=()=>{if(list){h+=`</${list}>`;list=''}};
+  for(const l of lines){let m;
+    if(m=l.match(/^\s*[-*•]\s+(.*)/)){if(list!=='ul'){close();h+='<ul>';list='ul'}h+=`<li>${inl(m[1])}</li>`}
+    else if(m=l.match(/^\s*\d+[.)]\s+(.*)/)){if(list!=='ol'){close();h+='<ol>';list='ol'}h+=`<li>${inl(m[1])}</li>`}
+    else if(m=l.match(/^#{1,4}\s+(.*)/)){close();h+=`<p><b>${inl(m[1])}</b></p>`}
+    else if(l.trim()){close();h+=`<p>${inl(l)}</p>`}else close()}
+  close();return h}
+
+/* ---------- screens ---------- */
+function render(){const app=$('#app');const inApp=S.stage==='app';$('#nav').hidden=!inApp;
+  document.querySelectorAll('.nav [data-tab]').forEach(b=>b.setAttribute('aria-current',b.dataset.tab===S.tab?'page':'false'));
+  app.innerHTML=S.stage==='login'?loginView():S.stage==='profile'?profileView(true):
+    S.tab==='food'?foodView():S.tab==='tech'?techView():S.tab==='workout'?workoutView():S.tab==='coach'?coachView():profileView(false);
+  if(inApp&&S.tab==='coach'){const m=$('#msgs');if(m)m.lastElementChild?.scrollIntoView({block:'end'})}}
+
+function loginView(){return `<h1>המאמן שלי</h1><p class="muted">סריקת קלוריות, תוכנית אימון ומאמן אישי. הכל במקום אחד.</p>
+  <div class="card">${S.pendingEmail?`<h2>בדוק את המייל</h2><p class="small muted">שלחנו קוד של 6 ספרות אל ${esc(S.pendingEmail)}. הקלד אותו כאן והטלפון יישאר מחובר.</p>
+    <label class="f" for="codeIn">הקוד מהמייל</label><input id="codeIn" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" maxlength="8" style="font-size:24px;letter-spacing:.3em;text-align:center">
+    <p id="loginErr" class="small" style="color:var(--bad)"></p><button class="btn block" data-act="verify">כניסה</button>
+    <button class="btn block ghost" style="margin-top:8px" data-act="sendlink">שלח שוב</button>
+    <button class="btn block ghost" style="margin-top:8px" data-act="otheremail">אימייל אחר</button>`
+  :`<label class="f" for="nameIn">איך קוראים לך?</label><input id="nameIn" type="text" value="${esc(S.name)}" autocomplete="given-name">
+    <label class="f" for="emailIn">אימייל</label><input id="emailIn" type="email" autocomplete="email" placeholder="name@gmail.com">
+    <p id="loginErr" class="small" style="color:var(--bad)"></p><button class="btn block" data-act="sendlink">שלח לי קוד כניסה</button>
+    <p class="small muted" style="margin-top:8px">בלי סיסמה: נשלח לך למייל קוד של 6 ספרות.</p>`}</div>`}
+
+const ACT=[['1.2','כמעט לא זז (עבודה מול מחשב)'],['1.375','1-3 אימונים בשבוע'],['1.55','3-5 אימונים בשבוע'],['1.725','6-7 אימונים בשבוע / עבודה פיזית']];
+function profileView(first){const t=targets();return `${first?`<h1>נעים להכיר${S.name?', '+esc(S.name):''}</h1><p class="muted">כמה פרטים, כדי שהיעדים והתשובות יתאימו בדיוק לך.</p>`:`<h1>הפרופיל שלי</h1>`}
+  <div class="card">
+   <label class="f">מין</label><div class="chips">${[['m','גבר'],['f','אישה']].map(([k,n])=>`<button class="chip" data-act="set" data-k="sex" data-v="${k}" aria-pressed="${S.sex===k}">${n}</button>`).join('')}</div>
+   <div class="grid2" style="grid-template-columns:1fr 1fr 1fr"><div><label class="f" for="age">גיל</label><input id="age" data-k="age" type="number" inputmode="numeric" value="${esc(S.age)}"></div>
+    <div><label class="f" for="height">גובה (ס״מ)</label><input id="height" data-k="height" type="number" inputmode="numeric" value="${esc(S.height)}"></div>
+    <div><label class="f" for="weight">משקל (ק״ג)</label><input id="weight" data-k="weight" type="number" inputmode="decimal" value="${esc(S.weight)}"></div></div>
+   <label class="f">מה המטרה שלך?</label><div class="chips">${Object.entries(GOALS).map(([k,n])=>`<button class="chip" data-act="set" data-k="goal" data-v="${k}" aria-pressed="${S.goal===k}">${n}</button>`).join('')}</div>
+   <label class="f" for="activity">כמה אתה פעיל?</label><select id="activity" data-k="activity">${ACT.map(([v,n])=>`<option value="${v}" ${S.activity===v?'selected':''}>${n}</option>`).join('')}</select>
+   <label class="f" for="diet">רגישויות או העדפות באוכל (לא חובה)</label><input id="diet" data-k="diet" type="text" value="${esc(S.diet)}" placeholder="למשל: צמחוני, בלי לקטוז, לא אוהב דגים">
+  </div>
+  ${t?`<div class="card"><h2>היעד היומי שלך</h2><div class="big">${t.kcal.toLocaleString()} <span style="font-size:18px">קק״ל</span></div>
+   <div class="macro"><div><div class="v" style="color:var(--p)">${t.protein} גר׳</div><div class="small muted">חלבון</div></div><div><div class="v" style="color:var(--c)">${t.carbs} גר׳</div><div class="small muted">פחמימות</div></div><div><div class="v" style="color:var(--f)">${t.fat} גר׳</div><div class="small muted">שומן</div></div></div>
+   <p class="small muted" style="margin-top:10px">הערכה לפי נוסחה מקובלת. המאמן שלך יכול לדייק אותה.</p></div>`:'<p class="small muted">מלא מין, גיל, גובה ומשקל כדי לראות את היעד היומי.</p>'}
+  ${first?`<button class="btn block" data-act="start">יאללה, מתחילים</button>`:`<button class="btn block ghost" data-act="signout">התנתק${S.email?' ('+esc(S.email)+')':''}</button>`}`}
+
+function ring(label,val,goal,color,unit='גר׳'){const pc=goal?Math.min(100,Math.round(val/goal*100)):0;
+  return `<div><div class="small muted">${label}</div><div class="v">${val}${goal?`<span class="small muted"> / ${goal}</span>`:''} <span class="small muted">${unit}</span></div><div class="bar"><i style="width:${pc}%;background:${color}"></i></div></div>`}
+function foodView(){const t=targets(),z=dayTotals(),M=S.meals[today()]||[];
+  return `<h1>סריקת אוכל</h1><p class="muted">צלם את מה שאכלת, כתוב מה זה, וקבל את כל הערכים התזונתיים.</p>
+  <div class="card">
+   <label class="f" for="foodText">מה אכלת?</label><input id="foodText" type="text" placeholder="למשל: 2 פרוסות לחם מלא עם חביתה וסלט">
+   <div class="row" style="margin-top:10px"><label class="btn" for="foodIn" style="flex:1;text-align:center;cursor:pointer">📷 צלם וחשב</label><input type="file" id="foodIn" accept="image/*" class="hidden">
+    <button class="btn ghost" data-act="foodtext" style="flex:1">חשב בלי תמונה</button></div>
+   <div id="foodOut"></div>
+  </div>
+  <div class="card"><div class="row between"><h2>היום</h2><span class="pill">${new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'numeric'})}</span></div>
+   <div class="big">${z.kcal.toLocaleString()}${t?`<span class="small muted" style="font-weight:500"> / ${t.kcal.toLocaleString()}</span>`:''} <span style="font-size:18px">קק״ל</span></div>
+   ${t?`<div class="bar"><i style="width:${Math.min(100,Math.round(z.kcal/t.kcal*100))}%;background:var(--accent)"></i></div>`:''}
+   <div class="macro">${ring('חלבון',z.protein,t?.protein,'var(--p)')}${ring('פחמימות',z.carbs,t?.carbs,'var(--c)')}${ring('שומן',z.fat,t?.fat,'var(--f)')}</div>
+   <p class="small muted" style="margin-top:8px">סיבים ${z.fiber} גר׳ · סוכר ${z.sugar} גר׳ · נתרן ${z.sodium} מ״ג</p>
+   <div style="margin-top:8px">${M.map((m,i)=>`<div class="meal">${m.thumb?`<img src="${m.thumb}" alt="">`:''}<div style="flex:1;min-width:0"><div class="t">${esc(m.name)}</div><div class="small muted">${esc(m.time)} · ח ${Math.round(m.protein)} · פ ${Math.round(m.carbs)} · ש ${Math.round(m.fat)}</div></div><b>${Math.round(m.kcal)}</b><button class="x" data-act="delmeal" data-i="${i}" aria-label="מחק">×</button></div>`).join('')||'<p class="small muted">עוד לא נרשמו ארוחות היום.</p>'}</div>
+  </div>`}
+
+const N=[['kcal','קק״ל'],['protein','חלבון'],['carbs','פחמ׳'],['fat','שומן']];
+async function scanFood(f){const out=$('#foodOut');const desc=($('#foodText')?.value||'').trim();
+  if(!f&&!desc){toast('כתוב מה אכלת או צלם את הצלחת');return}
+  const t=f?await thumb(f):null;out.innerHTML=`${t?`<img src="${t}" style="border-radius:10px;width:110px;margin-top:10px" alt="">`:''}<p class="think">מחשב ערכים תזונתיים…</p>`;
+  const prompt=`${profileLine()}\n\n${desc?`המתאמן כתב שהוא אכל: "${desc}". זה הקובע: חשב לפי מה שכתב ואל תחליף מאכלים.${f?' התמונה היא אותה ארוחה: השתמש בה כדי להעריך כמויות (גודל מנה, יחידות). אם כתב כמות, הכמות שלו קובעת.':' אם לא כתב כמות, הנח מנה רגילה.'}`:'בתמונה ארוחה. זהה כל מרכיב והערך את הכמות.'}
+חשב לכל מרכיב ערכים תזונתיים לפי טבלאות תזונה מקובלות (כמו USDA / מצרכים ישראליים נפוצים). כלול שמן, רטבים וממרחים אם סביר שהם שם.
+החזר רק JSON בעברית: {"items":[{"name":"","amount":"כמות במילים וגרמים","kcal":0,"protein":0,"carbs":0,"fat":0,"fiber":0,"sugar":0,"sodium":0}],"note":"משפט אחד מעשי שמתאים למטרה שלו"}. גרמים לכל הערכים חוץ מנתרן במיליגרם.`;
+  let r;try{r=await ai([{role:'user',content:prompt}],{json:true,images:f?[f]:null,kind:'food',max:1500})}
+  catch(e){out.innerHTML=`<div class="banner bad">${esc(aiFail(e))}</div>`;return}
+  const items=(r.items||[]).map(x=>({...x,...Object.fromEntries(['kcal','protein','carbs','fat','fiber','sugar','sodium'].map(k=>[k,Number(x[k])||0]))}));
+  const sum=k=>items.reduce((a,x)=>a+x[k],0);
+  const meal={name:desc||items.map(x=>x.name).slice(0,3).join(', ')||'ארוחה',time:new Date().toTimeString().slice(0,5),thumb:t,items};
+  ['kcal','protein','carbs','fat','fiber','sugar','sodium'].forEach(k=>meal[k]=Math.round(sum(k)*10)/10);
+  (S.meals[today()]=S.meals[today()]||[]).push(meal);save();render();
+  $('#foodOut').innerHTML=`<div class="banner">נוסף ליומן של היום ✓</div>
+   <table class="tbl"><thead><tr><th>מרכיב</th>${N.map(([,n])=>`<th>${n}</th>`).join('')}</tr></thead><tbody>
+   ${items.map(x=>`<tr><td>${esc(x.name)}<div class="small muted">${esc(x.amount)}</div></td>${N.map(([k])=>`<td>${Math.round(x[k])}</td>`).join('')}</tr>`).join('')}
+   <tr><td><b>סה״כ</b></td>${N.map(([k])=>`<td><b>${Math.round(meal[k])}</b></td>`).join('')}</tr></tbody></table>
+   <p class="small muted" style="margin-top:6px">סיבים ${Math.round(meal.fiber)} גר׳ · סוכר ${Math.round(meal.sugar)} גר׳ · נתרן ${Math.round(meal.sodium)} מ״ג</p>
+   ${r.note?`<p class="small">${esc(r.note)}</p>`:''}<p class="small muted">הערכה בלבד, טובה למעקב יומיומי.</p>`}
+
+/* ---------- workout plan ---------- */
+const WGOALS={lose:'ירידה במשקל',muscle:'בניית שריר',strength:'כוח',fit:'כושר כללי'};
+const PLACES={gym:'חדר כושר',homew:'בבית עם משקולות',home:'בבית בלי ציוד',out:'בחוץ / פארק'};
+const LEVELS={beginner:'מתחיל',mid:'בינוני',adv:'מתקדם'};
+function workoutView(){const F=S.planForm;if(!F.goal)F.goal=S.goal==='gain'?'muscle':S.goal==='lose'?'lose':'fit';
+  const ch=(k,obj)=>`<div class="chips">${Object.entries(obj).map(([v,n])=>`<button class="chip" data-act="pf" data-k="${k}" data-v="${v}" aria-pressed="${String(F[k])===v}">${n}</button>`).join('')}</div>`;
+  return `<h1>תוכנית אימון</h1><p class="muted">בחר מה מתאים לך, ונבנה לך תוכנית שבועית.</p>
+  ${S.plan?planCard(S.plan):''}
+  <div class="card"><h2>${S.plan?'לבנות תוכנית חדשה':'בוא נבנה תוכנית'}</h2>
+   <label class="f">מטרה</label>${ch('goal',WGOALS)}
+   <label class="f">כמה ימים בשבוע?</label>${ch('days',{2:'2',3:'3',4:'4',5:'5',6:'6'})}
+   <label class="f">כמה זמן לאימון?</label>${ch('minutes',{30:'30 דק׳',45:'45 דק׳',60:'שעה',90:'שעה וחצי'})}
+   <label class="f">איפה מתאמנים?</label>${ch('place',PLACES)}
+   <label class="f">רמה</label>${ch('level',LEVELS)}
+   <label class="f" for="pnotes">פציעות או משהו שחשוב לדעת (לא חובה)</label><input id="pnotes" type="text" value="${esc(F.notes)}" placeholder="למשל: כאב בברך שמאל, רוצה לחזק גב">
+   <button class="btn block" style="margin-top:14px" data-act="buildplan">בנה לי תוכנית</button><div id="planOut"></div>
+  </div>`}
+function planCard(p){return `<div class="card"><div class="row between"><h2>${esc(p.title)}</h2><span class="pill">${(p.days||[]).length} ימים</span></div>
+  ${p.summary?`<p class="small muted">${esc(p.summary)}</p>`:''}
+  ${(p.days||[]).map(d=>`<div class="day"><h3>${esc(d.name)}${d.focus?` <span class="pill">${esc(d.focus)}</span>`:''}</h3>
+   ${(d.exercises||[]).map(x=>`<div class="ex"><div class="row between"><span class="n">${esc(x.name)}</span><span class="small">${esc(x.sets)}×${esc(x.reps)}${x.rest?` · מנוחה ${esc(x.rest)}`:''}</span></div>${x.tip?`<div class="small muted">${esc(x.tip)}</div>`:''}</div>`).join('')}</div>`).join('')}
+  ${p.notes?`<p class="small" style="margin-top:8px">${esc(p.notes)}</p>`:''}
+  <button class="btn block ghost" data-act="askplan">שאל את המאמן על התוכנית</button></div>`}
+async function buildPlan(){const F=S.planForm;F.notes=($('#pnotes')?.value||'').trim();save();const out=$('#planOut');
+  const b=$('[data-act=buildplan]');b.disabled=true;out.innerHTML='<p class="think">בונה תוכנית…</p>';
+  const prompt=`${profileLine()}\n\nבנה תוכנית אימון שבועית. מטרה: ${WGOALS[F.goal]}. ${F.days} ימים בשבוע, ${F.minutes} דקות לאימון, מקום: ${PLACES[F.place]}, רמה: ${LEVELS[F.level]}. ${F.notes?'חשוב לדעת: '+F.notes+'.':''}
+כל אימון: חימום קצר, 4-7 תרגילים שמתאימים לציוד שיש לו, ובסוף (אם המטרה ירידה במשקל) אירובי. תרגילים מוכרים בשמות בעברית.
+החזר רק JSON בעברית: {"title":"שם קצר לתוכנית","summary":"משפט אחד על ההיגיון","days":[{"name":"אימון A","focus":"פלג גוף עליון","exercises":[{"name":"","sets":"3","reps":"10-12","rest":"60 שנ׳","tip":"דגש טכני קצר"}]}],"notes":"איך להתקדם משבוע לשבוע, משפט או שניים"}. בדיוק ${F.days} ימים.`;
+  try{S.plan=await ai([{role:'user',content:prompt}],{json:true,kind:'plan',max:2500});S.plan.created=today();save();render();toast('התוכנית מוכנה ✓');scrollTo(0,0)}
+  catch(e){out.innerHTML=`<div class="banner bad">${esc(aiFail(e))}</div>`;b.disabled=false}}
+function localPlan(){const F=S.planForm,n=+F.days||3,home=F.place!=='gym';
+  const A=home?[['סקוואט במשקל גוף','3','15'],['שכיבות סמיכה','3','8-12'],['לאנג׳ים','3','10 לכל רגל'],['פלאנק','3','30 שנ׳']]:[['סקוואט','3','8-10'],['לחיצת חזה','3','8-10'],['חתירה בכבל','3','10-12'],['פלאנק','3','40 שנ׳']];
+  const B=home?[['גשר ישבן','3','15'],['חתירה עם תיק / גומייה','3','12'],['מטפסי הרים','3','30 שנ׳'],['כפיפות בטן','3','15']]:[['דדליפט רומני','3','8-10'],['פולי עליון','3','10-12'],['לחיצת כתפיים','3','10'],['לחיצת רגליים','3','12']];
+  return{title:`תוכנית ${WGOALS[F.goal]} · ${n} ימים`,summary:'תוכנית הדגמה. אחרי כניסה המאמן יבנה תוכנית מלאה לפי הפרטים שלך.',
+    days:Array.from({length:n},(_,i)=>({name:`אימון ${'ABCDEF'[i]}`,focus:i%2?'גוף אחורי ובטן':'גוף מלא',exercises:(i%2?B:A).map(([name,sets,reps])=>({name,sets,reps,rest:'60 שנ׳'}))})),
+    notes:'כל שבוע נסה להוסיף חזרה אחת או קצת משקל.'}}
+
+/* ---------- coach chat ---------- */
+const QUICK=[['📉 תוכנית לירידה במשקל','תבנה לי תוכנית מסודרת לירידה במשקל: כמה לאכול, מה לאכול ביום רגיל, ואיך לשלב את האימונים.'],
+  ['🍳 מתכון עשיר בחלבון','תן לי מתכון טעים, פשוט ועשיר בחלבון שמתאים למטרה שלי, עם כמויות וערכים תזונתיים.'],
+  ['📋 תפריט ליום אחד','תבנה לי תפריט ליום אחד שמתאים ליעד הקלורי והחלבון שלי.'],
+  ['🍌 מה לאכול לפני אימון','מה כדאי לי לאכול לפני אימון ואחריו?'],
+  ['📊 איך היה היום שלי?','תסתכל על מה שאכלתי היום ותגיד לי מה טוב ומה כדאי לשפר בשאר היום.'],
+  ['🍫 יש לי חשק למתוק','יש לי חשק למשהו מתוק. מה אפשר לאכול שלא יהרוס לי את המטרה?']];
+function coachView(){return `<h1>המאמן האישי</h1><p class="muted">שאל כל דבר. המאמן מכיר את הפרטים, היעדים והאוכל שלך מהיום.</p>
+  <div class="chips" style="margin:12px 0">${QUICK.map(([n],i)=>`<button class="chip" data-act="quick" data-i="${i}">${n}</button>`).join('')}</div>
+  <div class="msgs" id="msgs">${S.chat.length?S.chat.map(m=>`<div class="msg ${m.role==='user'?'u':'a'}">${m.role==='user'?esc(m.content).replace(/\n/g,'<br>'):md(m.content)}</div>`).join(''):`<div class="msg a"><p>היי${S.name?' '+esc(S.name):''}! אני המאמן שלך. אפשר לבקש ממני תוכנית לירידה במשקל, מתכון עם הרבה חלבון, רעיון לארוחה, או כל שאלה על אימונים ותזונה.</p></div>`}</div>
+  ${S.chat.length?`<button class="btn ghost" style="margin-top:10px;font-size:13px;min-height:36px;padding:6px 12px" data-act="clearchat">שיחה חדשה</button>`:''}
+  <div class="composer"><textarea id="chatIn" rows="1" placeholder="כתוב למאמן…"></textarea><button class="btn" data-act="send">שלח</button></div>`}
+let SENDING=false;
+async function sendChat(text){text=(text||'').trim();if(!text||SENDING)return;SENDING=true;
+  S.chat.push({role:'user',content:text});save();render();
+  const box=$('#msgs');const b=document.createElement('div');b.className='msg a think';b.textContent='המאמן כותב…';box.append(b);b.scrollIntoView({block:'end'});
+  const hist=S.chat.slice(-16).map(m=>({...m}));hist[0]={role:'user',content:`${RULES}\n\n${profileLine()}\n\n${hist[0].role==='user'?hist[0].content:''}`};
+  if(hist[0].content.endsWith('\n\n'))hist.splice(1,0);
+  // keep roles alternating: if the first kept message was the coach's, put the context in a user message before it
+  const msgs=S.chat.slice(-16)[0].role==='assistant'?[{role:'user',content:`${RULES}\n\n${profileLine()}`},...S.chat.slice(-16)]:hist;
+  try{const r=await ai(msgs,{max:1800});S.chat.push({role:'assistant',content:r});save()}
+  catch(e){toast(aiFail(e));S.chat.pop();save()}
+  SENDING=false;render()}
+
+
+/* ---------- technique check with the skeleton (engine in live.js) ---------- */
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+function closeSheet(){}
+let LIVE_WHAT='',PICK='',LAST_LIVE=null;
+function exGrid(ids,label){return `<div class="eyebrow">${label}</div><div class="exgrid">${ids.map(id=>`<button class="exbtn" data-act="pickex" data-id="${id}" aria-pressed="${PICK===id}">${esc(LIVE_EX[id].name)}</button>`).join('')}</div>`}
+function techView(){const E=LIVE_EX[PICK];const H=(S.tech||[]).slice(-6).reverse();
+  return `<h1>בדיקת טכניקה</h1><p class="muted">מעמידים את הטלפון, השלד מתיישב על הגוף, סופר חזרות ומתקן טכניקה בזמן אמת.</p>
+  ${LAST_LIVE?resultCard():''}
+  <div class="card"><h2>איזה תרגיל?</h2>
+   ${exGrid(LIVE_BASE,'בסיס')}${exGrid(LIVE_MORE,'החזקות')}
+   <details ${LIVE_PUSH.includes(PICK)||LADDERS.some(l=>l[1].includes(PICK))?'open':''}><summary class="small" style="cursor:pointer;font-weight:700;margin:4px 0 8px">עוד תרגילים: וריאציות, פרונט לבר ופלאנש</summary>${exGrid(LIVE_PUSH,'וריאציות של שכיבות סמיכה')}
+   ${LADDERS.map(([t,ids])=>exGrid(ids,t+' · מהקל לקשה')).join('')}</details>
+   ${E?`<div class="banner">📱 ${esc(E.tip||'הנח את הטלפון כך שכל הגוף ייכנס בפריים.')}</div>
+    <label class="f" for="liveWhat">מה אתה מנסה לעשות? (לא חובה)</label><input id="liveWhat" type="text" placeholder="למשל: סט של 10, מנסה לרדת עמוק יותר">
+    <button class="btn block" style="margin-top:10px" data-act="livestart">פתח מצלמה: ${esc(E.name)}</button>`:'<p class="small muted">בחר תרגיל כדי להתחיל.</p>'}
+   <p class="small muted" style="margin-top:10px">השלד רץ בטלפון והסרטון לא נשמר. תמונות מרגעי המפתח נשלחות למאמן רק אם תבקש ניתוח מעמיק.</p></div>
+  ${H.length?`<div class="card"><h2>בדיקות אחרונות</h2>${H.map(h=>`<div class="meal"><div class="scorebig" style="width:44px;height:44px;font-size:16px;border-width:4px">${h.score??'–'}</div><div style="flex:1"><div class="t">${esc(h.name)}</div><div class="small muted">${esc(h.date)} · ${esc(h.headline)}</div></div></div>`).join('')}</div>`:''}`}
+function resultCard(){const {L,R,deep}=LAST_LIVE;
+  return `<div class="card"><div class="row between"><h2>${esc(L.name)}</h2><button class="x" data-act="closeres" aria-label="סגור">×</button></div>
+   <div class="score">${R.score!=null?`<div class="scorebig">${R.score}</div>`:''}<div><div class="t" style="font-weight:700">${esc(R.headline)}</div>${R.score!=null?'<div class="small muted">ציון טכניקה מתוך 10</div>':''}</div></div>
+   ${R.fix.length?`<p style="margin-top:10px"><b>מה לשפר בפעם הבאה</b></p><ul>${R.fix.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:L.seen>5?'<p class="small" style="margin-top:10px">לא זיהיתי טעויות. כל הכבוד!</p>':'<p class="small muted" style="margin-top:10px">לא הספקתי לראות אותך מספיק. נסה שוב כשכל הגוף בפריים.</p>'}
+   <div id="liveDeep">${deep?`<div class="msg a" style="max-width:100%;margin-top:10px">${md(deep)}</div>`:''}</div>
+   ${L.seen>5&&!deep?`<button class="btn block" id="liveDeepBtn" data-act="livedeep">ניתוח מעמיק מהמאמן 🔍</button>`:''}
+   <button class="btn block ghost" style="margin-top:8px" data-act="liveagain">נסה שוב</button></div>`}
+function finishLive(){const L=LIVE;if(!L)return;stopLive();const R=liveResult(L);LIVE=null;LAST_LIVE={L,R,deep:''};
+  if(L.seen>5&&R.score!=null){(S.tech=S.tech||[]).push({date:today(),id:L.id,name:L.name,score:R.score,headline:R.headline,fix:R.fix});S.tech=S.tech.slice(-60);save()}
+  render();scrollTo(0,0)}
+async function liveDeep(){const X=LAST_LIVE;if(!X)return;const {L,R}=X;const box=$('#liveDeep');$('#liveDeepBtn')?.remove();
+  box.innerHTML='<p class="think">המאמן עובר על החזרות והתמונות… (עד דקה)</p>';
+  const snaps=pickSnaps(L);const blobs=(await Promise.all(snaps.map(s=>s.p))).filter(Boolean);
+  const prompt=`${RULES}\n\n${profileLine()}\n\nהמתאמן עשה עכשיו בדיקת טכניקה חיה: ${L.name}.${L.what?` הוא אמר מה ניסה לעשות: "${L.what}". התייחס לזה ישירות.`:''} מעקב שלד (MediaPipe) מדד כל חזרה או החזקה:
+${liveStats(L)}
+סיכום: ${R.headline}.${R.fix.length?' טעויות שזוהו אוטומטית: '+R.fix.join(', ')+'.':''}
+${blobs.length?`מצורפות ${blobs.length} תמונות מרגעי מפתח: ${snaps.slice(0,blobs.length).map((s,i)=>`${i+1}) ${s.label}`).join('; ')}.`:''}
+המדידה דו-ממדית ממצלמה אחת, אז אם משהו נראה לא הגיוני אמור את זה. כתוב בקצרה: **מה טוב**, **הדבר הכי חשוב לתקן** (עם סימן גוף אחד שקל לזכור), **תרגיל עזר** אחד עם מינון, ו**הצעד הבא**.`;
+  try{if(!SB||!USER){X.deep='**מצב הדגמה.** אחרי כניסה המאמן יקבל את המדידות והתמונות וייתן ניתוח מלא.';}
+    else X.deep=await ai([{role:'user',content:prompt}],{images:blobs,max:1800})}
+  catch(e){box.innerHTML=`<div class="banner bad">${esc(aiFail(e))}</div>`;return}
+  render()}
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{const t=e.target.closest('[data-act],[data-tab]');if(!t)return;
+  if(t.dataset.tab){S.tab=t.dataset.tab;save();render();scrollTo(0,0);return}
+  const a=t.dataset.act;
+  if(a==='sendlink')sendLink();
+  else if(a==='verify')verifyCode();
+  else if(a==='otheremail'){S.pendingEmail='';save();render()}
+  else if(a==='set'){S[t.dataset.k]=t.dataset.v;save();render()}
+  else if(a==='start'){if(!targets()){toast('מלא מין, גיל, גובה ומשקל');return}S.stage='app';S.tab='food';save();render();scrollTo(0,0)}
+  else if(a==='signout')signOut();
+  else if(a==='foodtext')scanFood(null);
+  else if(a==='delmeal'){S.meals[today()].splice(+t.dataset.i,1);save();render()}
+  else if(a==='pf'){const k=t.dataset.k;S.planForm[k]=['days','minutes'].includes(k)?+t.dataset.v:t.dataset.v;S.planForm.notes=($('#pnotes')?.value||S.planForm.notes);save();render()}
+  else if(a==='buildplan')buildPlan();
+  else if(a==='askplan'){S.tab='coach';save();render();const i=$('#chatIn');i.value='יש לי שאלה על תוכנית האימון שלי: ';i.focus()}
+  else if(a==='quick'){S.tab='coach';sendChat(QUICK[+t.dataset.i][1])}
+  else if(a==='send')sendChat($('#chatIn').value);
+  else if(a==='clearchat'){S.chat=[];save();render()}
+  else if(a==='pickex'){PICK=t.dataset.id;render();setTimeout(()=>$('#liveWhat')?.scrollIntoView({block:'center',behavior:'smooth'}),30)}
+  else if(a==='livestart'){LIVE_WHAT=($('#liveWhat')?.value||'').trim();startLive(PICK)}
+  else if(a==='liveagain'){startLive(LAST_LIVE.L.id)}
+  else if(a==='closeres'){LAST_LIVE=null;render()}
+  else if(a==='livedeep')liveDeep()
+  else if(a==='livestop'){stopLive();LIVE=null}
+  else if(a==='livedone')finishLive()
+  else if(a==='liveflip'){if(LIVE){LIVE.facing=LIVE.facing==='user'?'environment':'user';startCamera().catch(()=>toast('לא הצלחתי להחליף מצלמה'))}}
+  else if(a==='livefit'){if(LIVE){LIVE.fullFrame=!LIVE.fullFrame;$('#liveFitBtn').textContent=LIVE.fullFrame?'⛶ מסך מלא':'⤢ כל הפריים'}}});
+document.addEventListener('input',e=>{const k=e.target.dataset?.k;if(k&&S.stage!=='login'){S[k]=e.target.value;save();
+  clearTimeout(window._rt);window._rt=setTimeout(()=>{const id=e.target.id,pos=e.target.selectionStart;render();const el=document.getElementById(id);if(el){el.focus();try{el.setSelectionRange(pos,pos)}catch(_){}}},600)}});
+document.addEventListener('change',e=>{if(e.target.id==='foodIn'&&e.target.files[0])scanFood(e.target.files[0]);if(e.target.id==='activity'){S.activity=e.target.value;save();render()}});
+document.addEventListener('keydown',e=>{if(e.target.id==='chatIn'&&e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat(e.target.value)}
+  if(e.key==='Enter'&&e.target.id==='emailIn')sendLink();if(e.key==='Enter'&&e.target.id==='codeIn')verifyCode()});
+if(!SB)render();
+</script>
+</body>
+</html>
