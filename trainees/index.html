@@ -169,8 +169,8 @@ function dayLine(){const M=S.meals[today()]||[];if(!M.length)return 'היום ע
   return `היום אכל: ${M.map(m=>m.name).join(', ')} (סה״כ ${t.kcal} קק״ל, ${t.protein} גר׳ חלבון).`}
 
 /* ---------- Supabase ---------- */
-const SUPABASE_URL="https://xgltmkgayorkhvxwvhem.supabase.co";
-const SUPABASE_ANON_KEY="sb_publishable_52XAO-p1ldQOmwO8daQ_Yw_nG90J31T";
+const SUPABASE_URL="https://nfitogfumqmxirrmquhr.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_L2OHZ5wvzwbw0Q16v5j_KQ_wL-tnX0h";
 let SB=null;try{if(!DEMO&&window.supabase)SB=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY)}catch(e){SB=null}
 let USER=null,READY=false;
 function packForCloud(){const r=JSON.parse(JSON.stringify(S));r.chat=(r.chat||[]).slice(-80);
